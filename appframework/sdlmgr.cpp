@@ -207,7 +207,9 @@ bool CSDLMgr::InitSDL()
 
     SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1");
+#ifdef SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE
     SDL_SetHint(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0");
+#endif
 
     m_bInitialized = true;
     return true;
@@ -357,7 +359,7 @@ void CSDLMgr::SwapBuffers()
     if (m_pWindow)
     {
         SDL_GL_SwapWindow(m_pWindow);
-        m_flPrevSwapTime = SDL_GetTicks() / 1000.0; // crude, but works for stub
+        m_flPrevSwapTime = SDL_GetTicks() / 1000.0;
     }
 }
 
@@ -619,7 +621,6 @@ int CSDLMgr::GetDisplayHeight()
 // ----------------------------------------------------------------------------
 bool CSDLMgr::CreateGameWindow( const char *pTitle, bool bWindowed, int width, int height )
 {
-    // Reuse the main window creation logic
     m_nWindowWidth = width;
     m_nWindowHeight = height;
     return CreateMainWindow();
@@ -640,13 +641,11 @@ void CSDLMgr::DecWindowRefCount()
 
 int CSDLMgr::GetEvents( CCocoaEvent *pEvents, int nMaxEventsToReturn, bool debugEvents )
 {
-    // Stub - not used on SDL
     return 0;
 }
 
 int CSDLMgr::PeekAndRemoveKeyboardEvents( bool *pbEsc, bool *pbReturn, bool *pbSpace, bool debugEvents )
 {
-    // Stub - keyboard events are handled via SDL events
     return 0;
 }
 
@@ -658,10 +657,6 @@ void CSDLMgr::SetCursorPosition( int x, int y )
 void CSDLMgr::SetWindowFullScreen( bool bFullScreen, int nWidth, int nHeight )
 {
     SetFullscreen(bFullScreen);
-    if (bFullScreen)
-    {
-        // nWidth/nHeight are ignored for desktop fullscreen
-    }
 }
 
 bool CSDLMgr::IsWindowFullScreen()
@@ -686,7 +681,7 @@ void CSDLMgr::DestroyGameWindow()
 
 void CSDLMgr::SetApplicationIcon( const char *pchAppIconFile )
 {
-    // Stub - not implemented for SDL
+    // stub
 }
 
 void CSDLMgr::GetNativeDisplayInfo( int nDisplay, uint &nWidth, uint &nHeight, uint &nRefreshHz )
@@ -740,19 +735,16 @@ PseudoGLContextPtr CSDLMgr::GetMainContext()
 
 PseudoGLContextPtr CSDLMgr::GetGLContextForWindow( void* windowref )
 {
-    // For now, return the main context
     return (PseudoGLContextPtr)m_GLContext;
 }
 
 PseudoGLContextPtr CSDLMgr::CreateExtraContext()
 {
-    // Stub - just return the main context
     return (PseudoGLContextPtr)m_GLContext;
 }
 
 void CSDLMgr::DeleteContext( PseudoGLContextPtr hContext )
 {
-    // Stub
 }
 
 bool CSDLMgr::MakeContextCurrent( PseudoGLContextPtr hContext )
@@ -769,24 +761,20 @@ GLMDisplayDB *CSDLMgr::GetDisplayDB( void )
 
 void CSDLMgr::GetDesiredPixelFormatAttribsAndRendererInfo( uint **ptrOut, uint *countOut, GLMRendererInfoFields *rendInfoOut )
 {
-    // Stub
     *ptrOut = NULL;
     *countOut = 0;
 }
 
 void CSDLMgr::ShowPixels( CShowPixelsParams *params )
 {
-    // Stub - not used
 }
 
 void CSDLMgr::GetStackCrawl( CStackCrawlParams *params )
 {
-    // Stub - not used
 }
 
 void CSDLMgr::WaitUntilUserInput( int msSleepTime )
 {
-    // Stub - use SDL event loop instead
     SDL_Delay(msSleepTime);
 }
 
@@ -803,22 +791,54 @@ void CSDLMgr::SetMouseCursor( SDL_Cursor *hCursor )
 void CSDLMgr::SetForbidMouseGrab( bool bForbidMouseGrab )
 {
     m_bForbidMouseGrab = bForbidMouseGrab;
-    // Not fully implemented, but it's a stub
 }
 
 void CSDLMgr::OnFrameRendered()
 {
-    // Stub - could be used for frame pacing
 }
 
 void CSDLMgr::SetGammaRamp( const uint16 *pRed, const uint16 *pGreen, const uint16 *pBlue )
 {
-    // Not implemented for SDL
 }
 
 double CSDLMgr::GetPrevGLSwapWindowTime()
 {
     return m_flPrevSwapTime;
+}
+
+// ----------------------------------------------------------------------------
+// IAppSystem implementation
+// ----------------------------------------------------------------------------
+bool CSDLMgr::Connect( CreateInterfaceFn factory )
+{
+    return true;
+}
+
+void CSDLMgr::Disconnect()
+{
+}
+
+void *CSDLMgr::QueryInterface( const char *pInterfaceName )
+{
+    return NULL;
+}
+
+InitReturnVal_t CSDLMgr::Init()
+{
+    if ( !m_bInitialized )
+    {
+        if ( !InitSDL() )
+            return INIT_FAILED;
+        if ( !CreateMainWindow() )
+            return INIT_FAILED;
+    }
+    return INIT_OK;
+}
+
+void CSDLMgr::Shutdown()
+{
+    DestroyMainWindow();
+    ShutdownSDL();
 }
 
 // ----------------------------------------------------------------------------
