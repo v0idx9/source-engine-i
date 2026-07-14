@@ -10,7 +10,6 @@
 #include "appframework/AppFramework.h"
 #include "filesystem.h"
 #include "materialsystem/IMaterialSystem.h"
-#include "materialsystem/MaterialSystemConfig.h"
 #include "inputsystem/ButtonCode.h"
 #include "inputsystem/IInputSystem.h"
 #include "togl/rendermechanism.h"
