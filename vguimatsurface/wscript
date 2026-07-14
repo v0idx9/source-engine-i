@@ -50,6 +50,8 @@ def build(bld):
 
 	libs = ['bitmap','mathlib','tier0','vgui_controls','tier1','vstdlib','tier2','tier3','vgui_surfacelib','FT2','FC','SDL2']
 
+	if bld.env.DEST_OS != 'win32':
+		libs += ['ZLIB', 'BZ2']
 	if bld.env.DEST_OS == 'android':
 		libs += ['EXPAT']
 	elif bld.env.DEST_OS == 'win32':

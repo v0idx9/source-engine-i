@@ -410,7 +410,14 @@ def check_deps(conf):
 		else:
 			conf.env.FRAMEWORK_UIKIT = "UIKit"
 			conf.env.FRAMEWORK_CFNETWORK = "CFNetwork"
-			conf.env.FRAMEWORK_SDL2 = "SDL2"
+			conf.env.FRAMEWORK_AVFOUNDATION = "AVFoundation"
+			conf.env.FRAMEWORK_COREBLUETOOTH = "CoreBluetooth"
+			conf.env.FRAMEWORK_COREHAPTICS = "CoreHaptics"
+			conf.env.FRAMEWORK_GAMECONTROLLER = "GameController"
+			conf.env.FRAMEWORK_QUARTZCORE = "QuartzCore"
+			conf.env.FRAMEWORK_METAL = "Metal"
+			conf.env.FRAMEWORK_SECURITY = "Security"
+			conf.env.FRAMEWORK_COREMOTION = "CoreMotion"
 			if not conf.env.ANGLE:
 				conf.env.FRAMEWORK_OPENGLES = "OpenGLES"
 			else:
@@ -653,11 +660,36 @@ def configure(conf):
 
 	check_deps( conf )
 
-	conf.load('sdl2')
-	if not conf.env.HAVE_SDL2:
-		conf.fatal("SDL2 isn't available")
-	else:
+	if conf.env.IOS:
+		conf.env.HAVE_SDL2 = 1
+		sdl_libdir = os.path.abspath('lib/darwin/aarch64')
+		if os.path.isfile(os.path.join(sdl_libdir, 'libSDL2.dylib')):
+			conf.env.LIB_SDL2 = ['SDL2']
+			conf.env.LIBPATH_SDL2 = [sdl_libdir]
+			conf.env.append_unique('LINKFLAGS', ['-Wl,-rpath,@executable_path'])
+		else:
+			conf.fatal('libSDL2.dylib not found in lib/darwin/aarch64 (rebuild iOS deps)')
+		sdl_include = None
+		for candidate in ['thirdparty/SDL-src/include', 'thirdparty/SDL/include']:
+			path = os.path.abspath(candidate)
+			if os.path.isdir(path):
+				sdl_include = path
+				break
+		if not sdl_include:
+			conf.fatal('SDL2 headers not found (thirdparty/SDL-src/include)')
+		conf.env.INCLUDES_SDL2 = [sdl_include, os.path.join(sdl_include, 'SDL2')]
+		conf.env.FRAMEWORK_SDL2 = [
+			'Foundation', 'UIKit', 'CoreGraphics', 'QuartzCore', 'CoreMotion', 'OpenGLES',
+			'AVFoundation', 'CoreAudio', 'AudioToolbox', 'CoreBluetooth', 'CoreHaptics',
+			'GameController', 'Metal', 'IOKit',
+		]
 		conf.env.append_unique('INCLUDES', conf.env.INCLUDES_SDL2)
+	else:
+		conf.load('sdl2')
+		if not conf.env.HAVE_SDL2:
+			conf.fatal("SDL2 isn't available")
+		else:
+			conf.env.append_unique('INCLUDES', conf.env.INCLUDES_SDL2)
 
 	# indicate if we are packaging for Linux/BSD
 	if conf.env.DEST_OS != 'android' and not conf.env.IOS:

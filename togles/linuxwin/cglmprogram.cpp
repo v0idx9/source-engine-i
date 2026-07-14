@@ -930,6 +930,8 @@ bool CGLMShaderPair::SetProgramPair( CGLMProgram *vp, CGLMProgram *fp )
 		{
 			Warning( "CGLMShaderPair::SetProgramPair: Centroid masks differ at link time of vertex shader %s and pixel shader %s!\n", 
 				vp->m_shaderName, fp->m_shaderName );
+			m_valid = false;
+			return false;
 		}
 
 		// attempt link. but first, detach any previously attached programs

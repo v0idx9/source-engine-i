@@ -50,6 +50,32 @@ def sdl2_configure_path(conf, path):
 		conf.env.LIB_SDL2 = ['SDL2']
 
 def configure(conf):
+	if conf.options.IOS or conf.options.IOSSIM:
+		conf.start_msg('Checking for library SDL2')
+		conf.env.HAVE_SDL2 = 1
+		sdl_libdir = os.path.abspath('lib/darwin/aarch64')
+		if os.path.isfile(os.path.join(sdl_libdir, 'libSDL2.dylib')):
+			conf.env.LIB_SDL2 = ['SDL2']
+			conf.env.LIBPATH_SDL2 = [sdl_libdir]
+		else:
+			conf.fatal('libSDL2.dylib not found in lib/darwin/aarch64 (rebuild iOS deps)')
+		sdl_include = None
+		for candidate in ['thirdparty/SDL-src/include', 'thirdparty/SDL/include']:
+			path = os.path.abspath(candidate)
+			if os.path.isdir(path):
+				sdl_include = path
+				break
+		if not sdl_include:
+			conf.fatal('SDL2 headers not found (thirdparty/SDL-src/include)')
+		conf.env.INCLUDES_SDL2 = [sdl_include, os.path.join(sdl_include, 'SDL2')]
+		conf.env.FRAMEWORK_SDL2 = [
+			'Foundation', 'UIKit', 'CoreGraphics', 'QuartzCore', 'CoreMotion', 'OpenGLES',
+			'AVFoundation', 'CoreAudio', 'AudioToolbox', 'CoreBluetooth', 'CoreHaptics',
+			'GameController', 'Metal', 'IOKit',
+		]
+		conf.end_msg('yes (iOS static from %s)' % sdl_include)
+		return
+
 	if conf.options.SDL2_PATH:
 		conf.start_msg('Configuring SDL2 by provided path')
 		sdl2_configure_path(conf, conf.options.SDL2_PATH)

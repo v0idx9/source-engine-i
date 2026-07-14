@@ -28,7 +28,7 @@
 #define MAX_PATH PATH_MAX
 #endif
 #ifdef IOS
-#include "SDL2/SDL.h"
+#include "SDL.h"
 extern "C" void IOS_LaunchDialog( void );
 extern "C" const char *IOS_GetExecDir( void );
 extern "C" int IOS_GetArgs( char ***out );
@@ -220,12 +220,17 @@ static void WaitForDebuggerConnect( int argc, char *argv[], int time )
 
 #endif // !LINUX
 
+#ifdef IOS
+extern "C" int SDL_main( int argc, char *argv[] )
+#else
 int main( int argc, char *argv[] )
+#endif
 {
 	char ld_path[4196];
 	char *path = "bin/";
 	char *ld_env;
 
+#ifndef IOS
 	if( (ld_env = getenv("LD_LIBRARY_PATH")) != NULL )
 	{
 		snprintf(ld_path, sizeof(ld_path), "%s:bin/", ld_env);
@@ -240,15 +245,24 @@ int main( int argc, char *argv[] )
 		setenv("NO_EXECVE_AGAIN", "1", 1);
 		execve(argv[0], argv, environ);
 	}
+#endif
 
 	#ifndef IOS
 	void *launcher = dlopen( "bin/liblauncher" DLL_EXT_STRING, RTLD_NOW );
 	#else
 	IOS_LaunchDialog();
 	argc = IOS_GetArgs(&argv);
+	if (argc <= 0 || !argv)
+	{
+		fprintf(stderr, "IOS_GetArgs failed\n");
+		return 1;
+	}
+
 	char basePath[PATH_MAX];
 	strncpy(basePath, IOS_GetExecDir(), sizeof(basePath));
-	void *launcher = dlopen( strcat(basePath, "/liblauncher.dylib"), RTLD_NOW );
+	basePath[sizeof(basePath) - 1] = '\0';
+	strncat(basePath, "/liblauncher.dylib", sizeof(basePath) - strlen(basePath) - 1);
+	void *launcher = dlopen(basePath, RTLD_NOW);
 	#endif
 	if ( !launcher ) {
 		fprintf( stderr, "%s\nFailed to load the launcher\n", dlerror() );

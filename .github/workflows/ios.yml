@@ -1,0 +1,70 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-ios-aarch64:
+    runs-on: macos-14
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache iOS dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            lib/darwin/aarch64
+            build-ios-deps
+            thirdparty/angle
+            .waf-*-*
+          key: ios-deps-v4-${{ hashFiles('scripts/build-ios-deps.sh', 'scripts/build-ios-common.sh') }}
+          restore-keys: |
+            ios-deps-v4-
+
+      - name: Install build tools
+        run: |
+          brew install cmake ninja
+          python3 --version
+          xcode-select -p
+          xcrun --sdk iphoneos --show-sdk-path
+
+      - name: Build iOS dependencies
+        env:
+          BUILD_ANGLE: "0"
+        run: |
+          chmod +x scripts/build-ios-*.sh
+          ./scripts/build-ios-deps.sh
+
+      - name: Build Source Engine for iOS
+        run: |
+          ./scripts/build-ios-aarch64.sh
+
+      - name: Package iOS IPA
+        run: |
+          chmod +x scripts/package-ios-ipa.sh
+          ./scripts/package-ios-ipa.sh
+
+      - name: Upload iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-ios-aarch64
+          if-no-files-found: error
+          path: build/*-ios-aarch64.ipa
+
+      - name: Upload iOS build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-engine-ios-aarch64
+          if-no-files-found: warn
+          path: |
+            build/**/*.dylib
+            build/**/hl2_launcher
+            lib/darwin/aarch64/**
