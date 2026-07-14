@@ -7,7 +7,7 @@
 // $NoKeywords: $
 //=============================================================================//
 
-#include "GL/gl.h"
+#include "togl/linuxwin/togl_sdl_gl.h"
 
 #undef MIN
 #undef MAX

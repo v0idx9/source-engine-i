@@ -23,7 +23,7 @@
 #if TOGLES && !IOS
 #include <EGL/egl.h>
 #endif
-#if IOS
+#if IOS && defined( ANGLE )
 #include <dlfcn.h>
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
