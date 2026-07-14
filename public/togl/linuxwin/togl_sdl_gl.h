@@ -3,9 +3,22 @@
 
 #ifdef USE_SDL
 #if defined( IOS ) || defined( _IOS ) || defined( __IPHONEOS__ )
-#include "SDL_opengles2.h"
+#include <OpenGLES/ES3/gl.h>
+#include <OpenGLES/ES3/glext.h>
 #ifndef GL_HALF_FLOAT
-#define GL_HALF_FLOAT GL_HALF_FLOAT_OES
+#define GL_HALF_FLOAT 0x140B
+#endif
+#ifndef GL_CLAMP_TO_BORDER
+#define GL_CLAMP_TO_BORDER GL_CLAMP_TO_BORDER_OES
+#endif
+#ifndef GL_TEXTURE_COMPARE_MODE_ARB
+#define GL_TEXTURE_COMPARE_MODE_ARB GL_COMPARE_REF_TO_TEXTURE
+#endif
+#ifndef GL_COMPARE_R_TO_TEXTURE_ARB
+#define GL_COMPARE_R_TO_TEXTURE_ARB GL_COMPARE_REF_TO_TEXTURE
+#endif
+#ifndef GL_TEXTURE_COMPARE_FUNC_ARB
+#define GL_TEXTURE_COMPARE_FUNC_ARB GL_TEXTURE_COMPARE_FUNC
 #endif
 #else
 #include "SDL_opengl.h"

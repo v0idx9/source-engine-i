@@ -16,7 +16,7 @@ CMAKE_IOS=(
 	-DCMAKE_POLICY_VERSION_MINIMUM=3.5
 )
 
-need_libs=(libz.a libbz2.a libpng.a libjpeg.a libfreetype2.a libcurl.a)
+need_libs=(libz.a libbz2.a libpng.a libjpeg.a libfreetype2.a libcurl.a libSDL2.a)
 all_present=true
 for lib in "${need_libs[@]}"; do
 	if [ ! -f "${OUT}/${lib}" ]; then
@@ -24,13 +24,6 @@ for lib in "${need_libs[@]}"; do
 		break
 	fi
 done
-if [ ! -f "${OUT}/libSDL2.dylib" ]; then
-	all_present=false
-fi
-if [ ! -f "${OUT}/libEGL.a" ] && [ ! -f "${OUT}/libEGL.dylib" ]; then
-	all_present=false
-fi
-
 if [ "${all_present}" = true ]; then
 	echo "All iOS deps already present in ${OUT}, skipping rebuild."
 	exit 0
@@ -178,14 +171,11 @@ build_angle() {
 	local angle_dir="${DEPS}/angle"
 	local angle_src="${angle_dir}/src"
 	local angle_build="${angle_dir}/build"
-	mkdir -p "${angle_dir}"
+	mkdir -p "${angle_src}" "${angle_build}"
 
-	if [ ! -f "${angle_src}/CMakeLists.txt" ]; then
-		rm -rf "${angle_src}"
+	if [ ! -d "${angle_src}/.git" ]; then
 		git clone --depth 1 --branch main https://github.com/google/angle.git "${angle_src}"
 	fi
-
-	mkdir -p "${angle_build}"
 
 	cmake -S "${angle_src}" -B "${angle_build}" "${CMAKE_IOS[@]}" \
 		-DANGLE_ENABLE_METAL=ON \
@@ -218,15 +208,6 @@ build_libjpeg
 build_freetype
 build_curl
 build_sdl2
-
-# Bootstrap ANGLE when libEGL is not cached yet (fresh CI / first macOS build).
-if [ "${BUILD_ANGLE:-0}" != "1" ]; then
-	if [ ! -f "${OUT}/libEGL.a" ] && [ ! -f "${OUT}/libEGL.dylib" ]; then
-		echo "==> libEGL not found in ${OUT}; bootstrapping ANGLE" >&2
-		BUILD_ANGLE=1
-	fi
-fi
-
 build_angle || {
 	echo "WARNING: ANGLE build failed; engine can still be built without --angle." >&2
 }
