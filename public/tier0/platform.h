@@ -90,6 +90,12 @@
 
 #include "tier0/valve_minmax_on.h"	// GCC 4.2.2 headers screw up our min/max defs.
 
+#if defined( IOS )
+#define GL_GLEXT_PROTOTYPES 1
+#include <OpenGLES/ES3/gl.h>
+#include <OpenGLES/ES3/glext.h>
+#endif
+
 #ifdef _RETAIL
 #define IsRetail() true
 #else
