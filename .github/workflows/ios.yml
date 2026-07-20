@@ -8,7 +8,9 @@ on:
 
 jobs:
   build-ios-aarch64:
-    runs-on: macos-14
+    # ANGLE's gn build requires a macOS 15+ SDK for its host tools, which the
+    # macos-14 image does not carry.
+    runs-on: macos-15
     timeout-minutes: 180
 
     steps:
@@ -33,7 +35,11 @@ jobs:
         run: |
           brew install cmake ninja
           python3 --version
+          # Pick the newest installed Xcode so the macOS SDK satisfies ANGLE.
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -s "$newest/Contents/Developer"
           xcode-select -p
+          ls "$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs"
           xcrun --sdk iphoneos --show-sdk-path
 
       - name: Build iOS dependencies
