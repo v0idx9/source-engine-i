@@ -665,6 +665,12 @@ def configure(conf):
 
 	if conf.env.IOS:
 		conf.env.HAVE_SDL2 = 1
+		# Bind all imports at load instead of lazily. This binary uses classic
+		# lazy stubs (no chained fixups); on the target's dyld a strong lazy
+		# import of an ANGLE symbol (libEGL uses thread-local storage) was
+		# resolving to null and crashing on first call (pc=0 in CSDLMgr::Init).
+		# Eager binding resolves it at load, or fails loudly with the symbol name.
+		conf.env.append_unique('LINKFLAGS', ['-Wl,-bind_at_load'])
 		sdl_libdir = os.path.abspath('lib/darwin/aarch64')
 		if os.path.isfile(os.path.join(sdl_libdir, 'libSDL2.dylib')):
 			conf.env.LIB_SDL2 = ['SDL2']
