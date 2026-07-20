@@ -31,9 +31,13 @@ while IFS= read -r dylib; do
 	cp "${dylib}" "${APP_DIR}/$(basename "${dylib}")"
 done < <(find "${ROOT}/build" -name '*.dylib' -type f | sort -u)
 
-if [ -f "${ROOT}/lib/darwin/aarch64/libSDL2.dylib" ]; then
-	cp "${ROOT}/lib/darwin/aarch64/libSDL2.dylib" "${APP_DIR}/libSDL2.dylib"
-fi
+# Prebuilt runtime dylibs: SDL2 plus ANGLE's EGL/GLESv2, which the iOS renderer
+# resolves at load time and so must ship inside the .app.
+for runtime_lib in libSDL2.dylib libEGL.dylib libGLESv2.dylib; do
+	if [ -f "${ROOT}/lib/darwin/aarch64/${runtime_lib}" ]; then
+		cp "${ROOT}/lib/darwin/aarch64/${runtime_lib}" "${APP_DIR}/${runtime_lib}"
+	fi
+done
 
 cp "${ROOT}/ios/Info.plist" "${APP_DIR}/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_ID}" "${APP_DIR}/Info.plist"

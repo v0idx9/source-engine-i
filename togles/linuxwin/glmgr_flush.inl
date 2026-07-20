@@ -626,7 +626,6 @@ FORCEINLINE void GLMContext::FlushDrawStates( uint nStartIndex, uint nEndIndex, 
 	return;
 
 flush_error_exit:
-	gGL->glUseProgram( 0 );
 	m_pBoundPair = NULL;
 	m_bDirtyPrograms = true;
 	return;

@@ -421,7 +421,10 @@ def check_deps(conf):
 			if not conf.env.ANGLE:
 				conf.env.FRAMEWORK_OPENGLES = "OpenGLES"
 			else:
-				conf.env.FRAMEWORK_OPENGLES = "libEGL"
+				# ANGLE ships plain dylibs, not a framework, so these link with
+				# -lEGL/-lGLESv2 rather than -framework.
+				conf.env.LIB_OPENGLES = ["EGL", "GLESv2"]
+				conf.env.LIBPATH_OPENGLES = [os.path.abspath('lib/darwin/aarch64')]
 	if conf.options.TESTS:
 		return
 

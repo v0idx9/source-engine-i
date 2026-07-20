@@ -33,7 +33,7 @@
 #pragma once
 
 #ifdef USE_SDL
-#include "togl/linuxwin/togl_sdl_gl.h"
+#include "SDL_opengl.h"
 #endif
 
 #ifdef OSX

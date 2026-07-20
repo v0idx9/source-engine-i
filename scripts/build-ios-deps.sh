@@ -17,6 +17,10 @@ CMAKE_IOS=(
 )
 
 need_libs=(libz.a libbz2.a libpng.a libjpeg.a libfreetype2.a libcurl.a libSDL2.a)
+# sdlmgr.cpp talks to EGL directly, so a cached deps dir without ANGLE is not complete.
+if [ "${BUILD_ANGLE:-0}" = "1" ]; then
+	need_libs+=(libEGL.dylib libGLESv2.dylib)
+fi
 all_present=true
 for lib in "${need_libs[@]}"; do
 	if [ ! -f "${OUT}/${lib}" ]; then
@@ -173,29 +177,34 @@ build_angle() {
 	local angle_build="${angle_dir}/build"
 	mkdir -p "${angle_src}" "${angle_build}"
 
+	# ANGLE is a GN project (.gn/BUILD.gn/DEPS, no CMakeLists.txt), so it has to be
+	# built with depot_tools rather than cmake.
+	local depot_tools="${angle_dir}/depot_tools"
+	if [ ! -d "${depot_tools}/.git" ]; then
+		git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git "${depot_tools}"
+	fi
+	export PATH="${depot_tools}:${PATH}"
+	# Let depot_tools self-bootstrap: it writes python3_bin_reldir.txt on first
+	# run, which gclient's siso hook requires. Pinning DEPOT_TOOLS_UPDATE=0 here
+	# skips that and the sync fails at configure_siso.py.
+	gclient --version >/dev/null 2>&1 || true
+
 	if [ ! -d "${angle_src}/.git" ]; then
-		git clone --depth 1 --branch main https://github.com/google/angle.git "${angle_src}"
+		git clone https://chromium.googlesource.com/angle/angle.git "${angle_src}"
 	fi
 
-	cmake -S "${angle_src}" -B "${angle_build}" "${CMAKE_IOS[@]}" \
-		-DANGLE_ENABLE_METAL=ON \
-		-DANGLE_ENABLE_OPENGL=OFF \
-		-DANGLE_ENABLE_VULKAN=OFF \
-		-DANGLE_ENABLE_NULL=OFF \
-		-DANGLE_ENABLE_SWIFTSHADER=OFF \
-		-DANGLE_ENABLE_TRACE=OFF \
-		-DANGLE_ENABLE_TESTS=OFF \
-		-DANGLE_ENABLE_EGL=ON \
-		-DANGLE_ENABLE_GLES2=ON \
-		-DANGLE_ENABLE_GLES3=ON
+	cd "${angle_src}"
+	python3 scripts/bootstrap.py
+	gclient sync -D --force --no-history
 
-	cmake --build "${angle_build}" --target EGL GLESv2
+	# ios_enable_code_signing=false: we sign the .app ourselves at packaging time.
+	# target_environment is mandatory for target_os="ios" (build/config/apple/mobile_config.gni).
+	gn gen "${angle_build}" --args="target_os=\"ios\" target_cpu=\"arm64\" target_environment=\"device\" ios_deployment_target=\"${IOS_MIN_VERSION}\" is_debug=false ios_enable_code_signing=false use_siso=false angle_enable_metal=true angle_enable_vulkan=false angle_enable_gl=false angle_enable_null=false angle_enable_swiftshader=false angle_build_tests=false"
 
-	local angle_out="${angle_build}/lib"
-	copy_if_exists "${angle_out}/libEGL.dylib"
-	copy_if_exists "${angle_out}/libEGL.a"
-	copy_if_exists "${angle_out}/libGLESv2.dylib"
-	copy_if_exists "${angle_out}/libGLESv2.a"
+	autoninja -C "${angle_build}" libEGL libGLESv2
+
+	copy_if_exists "${angle_build}/libEGL.dylib"
+	copy_if_exists "${angle_build}/libGLESv2.dylib"
 
 	mkdir -p "${ROOT}/thirdparty/angle/include"
 	rsync -a "${angle_src}/include/" "${ROOT}/thirdparty/angle/include/"
@@ -208,9 +217,8 @@ build_libjpeg
 build_freetype
 build_curl
 build_sdl2
-build_angle || {
-	echo "WARNING: ANGLE build failed; engine can still be built without --angle." >&2
-}
+# Not optional when enabled: the iOS renderer needs EGL to link.
+build_angle
 
 echo "Installed iOS libraries:"
 ls -la "${OUT}"

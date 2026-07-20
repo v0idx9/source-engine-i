@@ -29,9 +29,7 @@
 
 #pragma once
 
-#if defined( IOS ) || defined( _IOS )
-#include "togl/linuxwin/togl_sdl_gl.h"
-#elif defined( OSX )
+#ifdef OSX
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
 #elif defined(DX_TO_GL_ABSTRACTION)

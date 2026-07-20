@@ -38,11 +38,7 @@
 #endif
 
 #ifdef USE_SDL
-#if defined( IOS ) || defined( _IOS )
-#include "togl/linuxwin/togl_sdl_gl.h"
-#else
 #include "SDL_opengl.h"
-#endif
 #endif
 
 #ifdef OSX

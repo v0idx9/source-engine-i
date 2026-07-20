@@ -3860,13 +3860,14 @@ HRESULT IDirect3DDevice9::CreatePixelShader(CONST DWORD* pFunction,IDirect3DPixe
 	int nShadowDepthSamplerMask = ShadowDepthSamplerMaskFromName( pShaderName );
 	uint nCentroidMask = CentroidMaskFromName( true, pShaderName );
 
-	if ( pCentroidMask && *pCentroidMask != 0 )
+	if ( pCentroidMask )
 	{
 		if ( *pCentroidMask != nCentroidMask )
 		{
 			GLMDebugPrintf( "IDirect3DDevice9::CreatePixelShader: shaderapi's centroid mask (0x%08X) differs from mask derived from shader name (0x%08X) for shader %s\n", *pCentroidMask, nCentroidMask, pDebugLabel );
 		}
-		nCentroidMask = *pCentroidMask;
+		// It would be great if we could use these centroid masks passed in from shaderapi - but unfortunately they're only available for pixel shaders, and we also need to compute matching masks for vertex shaders!
+		//nCentroidMask = *pCentroidMask;
 	}
 
 	{
@@ -4138,7 +4139,7 @@ HRESULT IDirect3DDevice9::SetPixelShaderConstantI(UINT StartRegister,CONST int* 
 
 #endif
 
-HRESULT IDirect3DDevice9::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVertexShader9** ppShader, const char *pShaderName, char *pDebugLabel, const uint32 *pCentroidMask )
+HRESULT IDirect3DDevice9::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVertexShader9** ppShader, const char *pShaderName, char *pDebugLabel)
 {
 	GL_BATCH_PERF_CALL_TIMER;
 	GL_PUBLIC_ENTRYPOINT_CHECKS( this );
@@ -4146,14 +4147,6 @@ HRESULT IDirect3DDevice9::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVe
 	*ppShader = NULL;
 
 	uint32 nCentroidMask = CentroidMaskFromName( false, pShaderName );
-	if ( pCentroidMask && *pCentroidMask != 0 )
-	{
-		if ( *pCentroidMask != nCentroidMask )
-		{
-			GLMDebugPrintf( "IDirect3DDevice9::CreateVertexShader: shaderapi's centroid mask (0x%08X) differs from mask derived from shader name (0x%08X) for shader %s\n", *pCentroidMask, nCentroidMask, pDebugLabel );
-		}
-		nCentroidMask = *pCentroidMask;
-	}
 			
 	{
 		int numTranslations = 1;

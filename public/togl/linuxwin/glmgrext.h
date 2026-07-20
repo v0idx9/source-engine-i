@@ -28,7 +28,7 @@
 //===============================================================================
 
 #pragma once
-#include "togl_sdl_gl.h"
+#include "SDL_opengl.h"
 
 #ifndef GL_EXT_framebuffer_sRGB
 	#define GL_FRAMEBUFFER_SRGB_EXT                 0x8DB9

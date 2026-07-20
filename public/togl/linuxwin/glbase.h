@@ -38,7 +38,7 @@
 #endif
 
 #ifdef USE_SDL
-#include "togl_sdl_gl.h"
+#include "SDL_opengl.h"
 #endif
 
 #ifdef OSX

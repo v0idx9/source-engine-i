@@ -291,7 +291,7 @@ static void UnregisterPS( IDirect3DPixelShader9* pShader )
 //-----------------------------------------------------------------------------
 // The lovely low-level dx call to create a vertex shader
 //-----------------------------------------------------------------------------
-static HardwareShader_t CreateD3DVertexShader( DWORD *pByteCode, int numBytes, const char *pShaderName, char *debugLabel = NULL, uint32 nCentroidMask = 0 )
+static HardwareShader_t CreateD3DVertexShader( DWORD *pByteCode, int numBytes, const char *pShaderName, char *debugLabel = NULL )
 {
 	MEM_ALLOC_D3D_CREDIT();
 
@@ -305,7 +305,7 @@ static HardwareShader_t CreateD3DVertexShader( DWORD *pByteCode, int numBytes, c
 	HardwareShader_t hShader;
 
 	#ifdef DX_TO_GL_ABSTRACTION	
-		HRESULT hr = Dx9Device()->CreateVertexShader( pByteCode, (IDirect3DVertexShader9 **)&hShader, pShaderName, debugLabel, nCentroidMask ? &nCentroidMask : NULL );
+		HRESULT hr = Dx9Device()->CreateVertexShader( pByteCode, (IDirect3DVertexShader9 **)&hShader, pShaderName, debugLabel );
 	#else
 		if ( IsEmulatingGL() )
 		{
@@ -2415,7 +2415,7 @@ bool CShaderManager::CreateDynamicCombos_Ver5( void *pContext, uint8 *pComboBuff
 					debugLabelPtr = temp;
 #endif
 					// pass binary code to d3d interface, on GL it will invoke the translator back to asm
-					hardwareShader = CreateD3DVertexShader( reinterpret_cast< DWORD *>( pReadPtr ), nShaderSize, pShaderName, debugLabelPtr, pFileCache->m_Header.m_nCentroidMask );
+					hardwareShader = CreateD3DVertexShader( reinterpret_cast< DWORD *>( pReadPtr ), nShaderSize, pShaderName, debugLabelPtr );
 				}
 				else
 				{
@@ -3340,14 +3340,8 @@ void CShaderManager::SetVertexShader( VertexShader_t shader )
 #else
 	if ( vshLookup.m_Flags & SHADER_FAILED_LOAD )
 	{
-#if defined( IOS ) || defined( ANDROID )
-		SetVertexShaderState( 0 );
-		SetPixelShaderState( 0 );
-		return;
-#else
 		Assert( 0 );
 		return;
-#endif
 	}
 #ifdef _DEBUG
 	vshDebugIndex = (vshDebugIndex + 1) % MAX_SHADER_HISTORY;
@@ -3378,19 +3372,10 @@ void CShaderManager::SetVertexShader( VertexShader_t shader )
 	Assert( dxshader );
 
 #ifndef DYNAMIC_SHADER_COMPILE
-#if defined( IOS ) || defined( ANDROID )
-	if( !dxshader )
-	{
-		SetVertexShaderState( 0 );
-		SetPixelShaderState( 0 );
-		return;
-	}
-#else
 	if( !dxshader )
 	{
 		Error( "!!!!!Using invalid shader combo!!!!!  Consult a programmer and tell them to build debug materialsystem.dll and stdshader*.dll.  Run with \"mat_bufferprimitives 0\" and look for CMaterial in the call stack and see what m_pDebugName is.  You are likely using a shader combo that has been skipped.\n" );
 	}
-#endif
 #endif
 
 	SetVertexShaderState( dxshader );
@@ -3458,14 +3443,8 @@ void CShaderManager::SetPixelShader( PixelShader_t shader )
 #else
 	if ( pshLookup.m_Flags & SHADER_FAILED_LOAD )
 	{
-#if defined( IOS ) || defined( ANDROID )
-		SetPixelShaderState( 0 );
-		SetVertexShaderState( 0 );
-		return;
-#else
 		Assert( 0 );
 		return;
-#endif
 	}
 #ifdef _DEBUG
 	pshDebugIndex = (pshDebugIndex + 1) % MAX_SHADER_HISTORY;
@@ -3494,14 +3473,6 @@ void CShaderManager::SetPixelShader( PixelShader_t shader )
 	}
 
 	AssertMsg( dxshader != INVALID_HARDWARE_SHADER, "Failed to set pixel shader." );
-#if defined( IOS ) || defined( ANDROID )
-	if ( dxshader == INVALID_HARDWARE_SHADER )
-	{
-		SetPixelShaderState( 0 );
-		SetVertexShaderState( 0 );
-		return;
-	}
-#endif
 	SetPixelShaderState( dxshader );
 }
 

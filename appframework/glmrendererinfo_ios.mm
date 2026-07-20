@@ -7,13 +7,7 @@
 // $NoKeywords: $
 //=============================================================================//
 
-#if defined( IOS )
-#define GL_GLEXT_PROTOTYPES 1
-#include <OpenGLES/ES3/gl.h>
-#include <OpenGLES/ES3/glext.h>
-#else
-#include "togl/linuxwin/togl_sdl_gl.h"
-#endif
+#include "GL/gl.h"
 
 #undef MIN
 #undef MAX
@@ -601,7 +595,7 @@ GLMDisplayInfo::GLMDisplayInfo( CGDirectDisplayID displayID, CGOpenGLDisplayMask
         
         if ( pWindow )
         {
-            SDL_GL_GetDrawableSize( pWindow, &rw, &rh );
+            SDL_GetWindowSizeInPixels( pWindow, &rw, &rh );
             m_info.m_displayPixelWidth  = rw;
             m_info.m_displayPixelHeight = rh;
         }
@@ -676,7 +670,7 @@ void GLMDisplayInfo::PopulateModes( void )
     
     int rw, rh;
 	SDL_DisplayMode mode;
-    SDL_GL_GetDrawableSize(SDL_GetWindowFromID(1), &rw, &rh);
+    SDL_GetWindowSizeInPixels(SDL_GetWindowFromID(1), &rw, &rh);
 	SDL_GetCurrentDisplayMode(0, &mode);
 	//SDL_GetWindowSize(SDL_GetWindowFromID(1), &w, &h);
 	float scale = (float)rw / mode.w;
