@@ -199,7 +199,14 @@ build_angle() {
 
 	# ios_enable_code_signing=false: we sign the .app ourselves at packaging time.
 	# target_environment is mandatory for target_os="ios" (build/config/apple/mobile_config.gni).
-	gn gen "${angle_build}" --args="target_os=\"ios\" target_cpu=\"arm64\" target_environment=\"device\" ios_deployment_target=\"${IOS_MIN_VERSION}\" is_debug=false ios_enable_code_signing=false use_siso=false angle_enable_metal=true angle_enable_vulkan=false angle_enable_gl=false angle_enable_null=false angle_enable_swiftshader=false angle_build_tests=false"
+	# mac_sdk_min is lowered to whatever the runner image actually has: ANGLE
+	# defaults to requiring a 15+ macOS SDK for host tools, and bumping the
+	# runner to get one regresses the older C dependencies (zlib).
+	local mac_sdk_ver
+	mac_sdk_ver="$(xcrun --sdk macosx --show-sdk-version 2>/dev/null || echo 14.5)"
+	echo "==> using mac_sdk_min=${mac_sdk_ver}"
+
+	gn gen "${angle_build}" --args="target_os=\"ios\" target_cpu=\"arm64\" target_environment=\"device\" ios_deployment_target=\"${IOS_MIN_VERSION}\" mac_sdk_min=\"${mac_sdk_ver}\" is_debug=false ios_enable_code_signing=false use_siso=false angle_enable_metal=true angle_enable_vulkan=false angle_enable_gl=false angle_enable_null=false angle_enable_swiftshader=false angle_build_tests=false"
 
 	autoninja -C "${angle_build}" libEGL libGLESv2
 
