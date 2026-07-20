@@ -206,7 +206,11 @@ build_angle() {
 	mac_sdk_ver="$(xcrun --sdk macosx --show-sdk-version 2>/dev/null || echo 14.5)"
 	echo "==> using mac_sdk_min=${mac_sdk_ver}"
 
-	gn gen "${angle_build}" --args="target_os=\"ios\" target_cpu=\"arm64\" target_environment=\"device\" ios_deployment_target=\"${IOS_MIN_VERSION}\" mac_sdk_min=\"${mac_sdk_ver}\" is_debug=false ios_enable_code_signing=false use_siso=false angle_enable_metal=true angle_enable_vulkan=false angle_enable_gl=false angle_enable_null=false angle_enable_swiftshader=false angle_build_tests=false"
+	# angle_enable_wgpu=false drops Dawn, which the Metal backend does not need
+	# and which does not compile below iOS 13 (aligned_alloc). ANGLE itself is
+	# built against iOS 13 for the same reason; the engine keeps its own
+	# ${IOS_MIN_VERSION} target.
+	gn gen "${angle_build}" --args="target_os=\"ios\" target_cpu=\"arm64\" target_environment=\"device\" ios_deployment_target=\"13.0\" mac_sdk_min=\"${mac_sdk_ver}\" is_debug=false ios_enable_code_signing=false use_siso=false angle_enable_metal=true angle_enable_vulkan=false angle_enable_gl=false angle_enable_null=false angle_enable_swiftshader=false angle_enable_wgpu=false angle_build_tests=false"
 
 	autoninja -C "${angle_build}" libEGL libGLESv2
 
