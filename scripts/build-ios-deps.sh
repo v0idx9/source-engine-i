@@ -17,10 +17,6 @@ CMAKE_IOS=(
 )
 
 need_libs=(libz.a libbz2.a libpng.a libjpeg.a libfreetype2.a libcurl.a libSDL2.a)
-# sdlmgr.cpp talks to EGL directly, so a cached deps dir without ANGLE is not complete.
-if [ "${BUILD_ANGLE:-0}" = "1" ]; then
-	need_libs+=(libEGL.dylib libGLESv2.dylib)
-fi
 all_present=true
 for lib in "${need_libs[@]}"; do
 	if [ ! -f "${OUT}/${lib}" ]; then
@@ -28,6 +24,16 @@ for lib in "${need_libs[@]}"; do
 		break
 	fi
 done
+# sdlmgr.cpp links ANGLE directly, so a cached deps dir without the ANGLE
+# frameworks is not complete.
+if [ "${BUILD_ANGLE:-0}" = "1" ]; then
+	for fw in libEGL.framework libGLESv2.framework; do
+		if [ ! -d "${OUT}/${fw}" ]; then
+			all_present=false
+			break
+		fi
+	done
+fi
 if [ "${all_present}" = true ]; then
 	echo "All iOS deps already present in ${OUT}, skipping rebuild."
 	exit 0
@@ -221,44 +227,43 @@ build_angle() {
 	echo "==> ANGLE build products:"
 	find "${angle_build}" -maxdepth 2 \( -name 'libEGL*' -o -name 'libGLESv2*' \) -print
 
-	# On iOS gn emits framework bundles (libEGL.framework/libEGL), but the engine
-	# links plain -lEGL/-lGLESv2 and the packaging script ships flat dylibs, so
-	# lift the Mach-O binaries out and give them dylib install names.
-	extract_angle_lib() {
+	# On iOS gn emits framework bundles (libEGL.framework/libEGL with an
+	# Info.plist and its own code signature). Ship them INTACT -- this is what
+	# the known-good build does. Extracting the Mach-O into a flat dylib and
+	# re-signing it produces a library the loader accepts as a dependency but
+	# whose symbols resolve to null at runtime (crash calling eglGetDisplay).
+	copy_angle_framework() {
 		local name="$1"                       # libEGL / libGLESv2
-		local src="${angle_build}/${name}.framework/${name}"
-		local dst="${OUT}/${name}.dylib"
+		local src="${angle_build}/${name}.framework"
 
-		if [ ! -f "${src}" ]; then
-			src="$(find "${angle_build}" -maxdepth 2 -name "${name}.dylib" -print -quit 2>/dev/null)"
-		fi
-		if [ ! -f "${src}" ]; then
-			echo "ERROR: ANGLE built but ${name} was not found under ${angle_build}" >&2
+		if [ ! -d "${src}" ]; then
+			echo "ERROR: ANGLE built but ${name}.framework was not found under ${angle_build}" >&2
 			ls -la "${angle_build}" >&2
 			return 1
 		fi
 
-		cp "${src}" "${dst}"
-		install_name_tool -id "@executable_path/${name}.dylib" "${dst}"
+		rm -rf "${OUT}/${name}.framework"
+		cp -R "${src}" "${OUT}/${name}.framework"
 
-		# Rewrite framework-style references between them to the flat dylibs.
-		local dep
-		while IFS= read -r dep; do
-			case "${dep}" in
-				*libEGL.framework/libEGL)
-					install_name_tool -change "${dep}" "@executable_path/libEGL.dylib" "${dst}" || true
-					;;
-				*libGLESv2.framework/libGLESv2)
-					install_name_tool -change "${dep}" "@executable_path/libGLESv2.dylib" "${dst}" || true
-					;;
-			esac
-		done < <(otool -L "${dst}" | tail -n +2 | awk '{print $1}')
+		# gn may leave the Info.plist only in gen/; a framework without it will
+		# not load on device.
+		if [ ! -f "${OUT}/${name}.framework/Info.plist" ]; then
+			local plist
+			plist="$(find "${angle_build}/gen" -name "${name}_framework_info_plist*.plist" -print -quit 2>/dev/null)"
+			[ -n "${plist}" ] && cp "${plist}" "${OUT}/${name}.framework/Info.plist"
+		fi
 
-		echo "==> extracted ${name} -> ${dst}"
+		# Install name that resolves at runtime: dependents link against this, and
+		# @rpath is set to @executable_path/Frameworks, so this points to the file
+		# at Frameworks/<name>.framework/<name> inside the app.
+		install_name_tool -id "@rpath/${name}.framework/${name}" "${OUT}/${name}.framework/${name}"
+
+		echo "==> staged ${name}.framework"
+		ls -la "${OUT}/${name}.framework"
 	}
 
-	extract_angle_lib libEGL
-	extract_angle_lib libGLESv2
+	copy_angle_framework libEGL
+	copy_angle_framework libGLESv2
 
 	mkdir -p "${ROOT}/thirdparty/angle/include"
 	rsync -a "${angle_src}/include/" "${ROOT}/thirdparty/angle/include/"

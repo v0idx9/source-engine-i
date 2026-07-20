@@ -31,11 +31,20 @@ while IFS= read -r dylib; do
 	cp "${dylib}" "${APP_DIR}/$(basename "${dylib}")"
 done < <(find "${ROOT}/build" -name '*.dylib' -type f | sort -u)
 
-# Prebuilt runtime dylibs: SDL2 plus ANGLE's EGL/GLESv2, which the iOS renderer
-# resolves at load time and so must ship inside the .app.
-for runtime_lib in libSDL2.dylib libEGL.dylib libGLESv2.dylib; do
-	if [ -f "${ROOT}/lib/darwin/aarch64/${runtime_lib}" ]; then
-		cp "${ROOT}/lib/darwin/aarch64/${runtime_lib}" "${APP_DIR}/${runtime_lib}"
+# SDL2 stays a flat dylib at the app root.
+if [ -f "${ROOT}/lib/darwin/aarch64/libSDL2.dylib" ]; then
+	cp "${ROOT}/lib/darwin/aarch64/libSDL2.dylib" "${APP_DIR}/libSDL2.dylib"
+fi
+
+# ANGLE ships as framework bundles under Frameworks/ (resolved via the
+# @executable_path/Frameworks rpath the binaries were linked with). Ship them
+# intact; extracting/flattening them makes their symbols resolve to null on
+# device.
+mkdir -p "${APP_DIR}/Frameworks"
+for fw in libEGL.framework libGLESv2.framework; do
+	if [ -d "${ROOT}/lib/darwin/aarch64/${fw}" ]; then
+		rm -rf "${APP_DIR}/Frameworks/${fw}"
+		cp -R "${ROOT}/lib/darwin/aarch64/${fw}" "${APP_DIR}/Frameworks/${fw}"
 	fi
 done
 
@@ -91,6 +100,11 @@ echo "==> Code signing with identity: ${SIGN_IDENTITY}"
 	"${APP_DIR}/hl2_launcher"
 for dylib in "${APP_DIR}"/*.dylib; do
 	/usr/bin/codesign --force --sign "${SIGN_IDENTITY}" --timestamp=none "${dylib}"
+done
+# Sign nested frameworks inside-out before the app.
+for fw in "${APP_DIR}"/Frameworks/*.framework; do
+	[ -d "${fw}" ] || continue
+	/usr/bin/codesign --force --sign "${SIGN_IDENTITY}" --timestamp=none "${fw}"
 done
 /usr/bin/codesign --force --sign "${SIGN_IDENTITY}" \
 	--entitlements "${ENTITLEMENTS}" \

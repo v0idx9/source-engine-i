@@ -46,10 +46,10 @@ CONFIGURE_ARGS=(
 	--skip-sdl2-sanity-check
 )
 
-if [ -f "${ROOT}/lib/darwin/aarch64/libEGL.a" ] || [ -f "${ROOT}/lib/darwin/aarch64/libEGL.dylib" ]; then
+if [ -d "${ROOT}/lib/darwin/aarch64/libEGL.framework" ]; then
 	CONFIGURE_ARGS+=(--angle)
 else
-	echo "WARNING: libEGL not found in lib/darwin/aarch64; building with native OpenGLES." >&2
+	echo "WARNING: libEGL.framework not found in lib/darwin/aarch64; building with native OpenGLES." >&2
 fi
 
 # iOS uses static libSDL2.a and SDL-src headers via scripts/waifulib/sdl2.py.

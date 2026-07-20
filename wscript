@@ -421,10 +421,13 @@ def check_deps(conf):
 			if not conf.env.ANGLE:
 				conf.env.FRAMEWORK_OPENGLES = "OpenGLES"
 			else:
-				# ANGLE ships plain dylibs, not a framework, so these link with
-				# -lEGL/-lGLESv2 rather than -framework.
-				conf.env.LIB_OPENGLES = ["EGL", "GLESv2"]
-				conf.env.LIBPATH_OPENGLES = [os.path.abspath('lib/darwin/aarch64')]
+				# ANGLE ships as framework bundles (libEGL.framework/libEGL),
+				# staged into lib/darwin/aarch64 by build-ios-deps.sh. Link them
+				# as frameworks and resolve @rpath against the app's Frameworks
+				# dir, matching the layout that loads correctly on device.
+				conf.env.FRAMEWORK_OPENGLES = ["libEGL", "libGLESv2"]
+				conf.env.FRAMEWORKPATH_OPENGLES = [os.path.abspath('lib/darwin/aarch64')]
+				conf.env.append_unique('LINKFLAGS', ['-Wl,-rpath,@executable_path/Frameworks'])
 	if conf.options.TESTS:
 		return
 
