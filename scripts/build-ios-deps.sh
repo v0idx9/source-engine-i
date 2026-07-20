@@ -214,8 +214,29 @@ build_angle() {
 
 	autoninja -C "${angle_build}" libEGL libGLESv2
 
-	copy_if_exists "${angle_build}/libEGL.dylib"
-	copy_if_exists "${angle_build}/libGLESv2.dylib"
+	# gn puts these where it likes depending on component/static config, so find
+	# them rather than assuming a path. Copying silently is not acceptable here:
+	# a missing libEGL makes configure drop --angle and the build then fails much
+	# later with confusing header conflicts.
+	echo "==> ANGLE build products:"
+	find "${angle_build}" -maxdepth 2 \( -name 'libEGL*' -o -name 'libGLESv2*' \) -print
+
+	local found_egl=0 found_gles=0 artifact
+	while IFS= read -r artifact; do
+		[ -n "${artifact}" ] || continue
+		cp -a "${artifact}" "${OUT}/$(basename "${artifact}")"
+		case "$(basename "${artifact}")" in
+			libEGL*) found_egl=1 ;;
+			libGLESv2*) found_gles=1 ;;
+		esac
+	done < <(find "${angle_build}" -maxdepth 2 \( -name 'libEGL.dylib' -o -name 'libGLESv2.dylib' -o -name 'libEGL.a' -o -name 'libGLESv2.a' \) 2>/dev/null)
+
+	if [ "${found_egl}" != "1" ] || [ "${found_gles}" != "1" ]; then
+		echo "ERROR: ANGLE built but libEGL/libGLESv2 were not found under ${angle_build}" >&2
+		echo "Contents:" >&2
+		ls -la "${angle_build}" >&2 | head -50
+		return 1
+	fi
 
 	mkdir -p "${ROOT}/thirdparty/angle/include"
 	rsync -a "${angle_src}/include/" "${ROOT}/thirdparty/angle/include/"
