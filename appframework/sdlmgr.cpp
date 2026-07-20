@@ -1476,7 +1476,11 @@ void CSDLMgr::ShowPixels( CShowPixelsParams *params )
 			int dstxmax = 0;
 			int dstymax = 0;
 
-			SDL_GetWindowSize(m_Window, &dstxmax, &dstymax);
+			// Destination is the default framebuffer, which is the full native
+			// drawable in PIXELS (the window is high-DPI + Metal). Using
+			// SDL_GetWindowSize here returns points and blits the scene into a
+			// bottom-left corner of the screen.
+			SDL_GL_GetDrawableSize(m_Window, &dstxmax, &dstymax);
 
 			if (gl_blit_halfx.GetInt())
 			{
