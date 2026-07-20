@@ -22,7 +22,9 @@ export CXX="clang++ --target=${IOS_CLANG_TARGET} -isysroot ${SDKROOT} -mios-vers
 export AR="$(xcrun --sdk "${IOS_SDK}" --find ar)"
 export RANLIB="$(xcrun --sdk "${IOS_SDK}" --find ranlib)"
 export STRIP="$(xcrun --sdk "${IOS_SDK}" --find strip)"
-export CFLAGS="-O2 -fPIC -DNDEBUG"
+# -std=gnu17: zlib and friends use K&R-style definitions that a C23 default
+# (Xcode 26's clang) rejects outright.
+export CFLAGS="-O2 -fPIC -DNDEBUG -std=gnu17"
 export CXXFLAGS="-O2 -fPIC -DNDEBUG -std=c++11"
 export LDFLAGS="-L${OUT}"
 export PKG_CONFIG_PATH=""
