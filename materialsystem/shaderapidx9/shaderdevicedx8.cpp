@@ -1676,6 +1676,12 @@ void CShaderDeviceDx8::SetPresentParameters( void* hWnd, int nAdapter, const Sha
 		m_bUsingStencil = false; //couldn't acquire a stencil buffer
 	};
 
+	// Portals are rendered with the stencil buffer; zero bits here disables them
+	// entirely (PortalRender clamps its view depth to 0).
+	Msg( "DIAG: stencil: usingStencil=%d bits=%d autoDepthStencilFormat=0x%x dxlevel=%d\n",
+		(int)m_bUsingStencil, m_iStencilBufferBits,
+		(unsigned)m_PresentParameters.AutoDepthStencilFormat, info.m_nDXLevel );
+
 	if ( IsX360() || !info.m_bWindowed )
 	{
 		bool useDefault = ( info.m_DisplayMode.m_nWidth == 0 ) || ( info.m_DisplayMode.m_nHeight == 0 );

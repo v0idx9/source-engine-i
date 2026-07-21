@@ -498,6 +498,17 @@ bool CPortalRender::DrawPortalsUsingStencils( CViewRender *pViewRender )
 
 	const int iMaxDepth = MIN( r_portal_stencil_depth.GetInt(), MIN( MAX_PORTAL_RECURSIVE_VIEWS, (1 << materials->StencilBufferBits()) ) - 1 );
 
+	// With no stencil bits this collapses to 0 and no portal view is ever drawn.
+	{
+		static int s_nPortalLogged = 0;
+		if ( s_nPortalLogged < 3 )
+		{
+			s_nPortalLogged++;
+			Msg( "DIAG: portal render: activePortals=%d stencilBits=%d iMaxDepth=%d recursionLevel=%d\n",
+				iNumRenderablePortals, materials->StencilBufferBits(), iMaxDepth, m_iViewRecursionLevel );
+		}
+	}
+
 	if( m_iViewRecursionLevel >= iMaxDepth ) //can't support any more views	
 	{
 		m_iRemainingPortalViewDepth = 0; //special case handler for max depth 0 cases
