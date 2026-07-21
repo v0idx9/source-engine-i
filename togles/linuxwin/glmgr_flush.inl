@@ -253,7 +253,22 @@ FORCEINLINE void GLMContext::FlushDrawStates( uint nStartIndex, uint nEndIndex, 
 	Assert( m_ViewportBox.GetData().height == (int)( m_ViewportBox.GetData().widthheight >> 16 ) );
 
 	m_pBoundPair->UpdateScreenUniform( m_ViewportBox.GetData().widthheight );
-	
+
+	// Fake sRGB: with no hardware gamma writes (the iOS/ES path), pixel shaders
+	// carry an sRGB-encode suffix gated by the "flSRGBWrite" uniform, and the
+	// engine's SRGBWRITEENABLE intent is shunted into m_FakeBlendEnableSRGB
+	// (see WriteBlendEnableSRGB). That value was never pushed to the uniform, so
+	// output stayed linear -- the too-dark ("low gamma") look. Push it here.
+	if ( m_pBoundPair->m_locFragmentFakeSRGBEnable >= 0 )
+	{
+		float flSRGBWrite = m_FakeBlendEnableSRGB ? 1.0f : 0.0f;
+		if ( m_pBoundPair->m_fakeSRGBEnableValue != flSRGBWrite )
+		{
+			gGL->glUniform1f( m_pBoundPair->m_locFragmentFakeSRGBEnable, flSRGBWrite );
+			m_pBoundPair->m_fakeSRGBEnableValue = flSRGBWrite;
+		}
+	}
+
 	GL_BATCH_PERF( m_FlushStats.m_nNumChangedSamplers += m_nNumDirtySamplers );
 
 #if !defined( OSX ) // no support for sampler objects in OSX 10.6 (GL 2.1 profile)
