@@ -29,6 +29,9 @@ def build(bld):
 		source += ['glmrendererinfo_osx.mm']
 	if bld.env.IOS:
 		source += ['glmrendererinfo_ios.mm']
+		# Separate TU: imports UIKit only, which cannot coexist with the Source
+		# headers (BOOL / MIN / MAX collisions).
+		source += ['ios_screensize.mm']
 
 
 	if bld.env.DEST_OS == 'win32':
