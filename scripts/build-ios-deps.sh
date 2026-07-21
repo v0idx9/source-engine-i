@@ -347,6 +347,10 @@ build_protobuf() {
 	# steammessages + base_gcmessages, gcsdk_gcmessages needs steammessages),
 	# so every directory has to be on the import path.
 	local proto_paths=(
+		# protobuf's own src, so the well-known types resolve: several of these
+		# import google/protobuf/descriptor.proto, and passing explicit
+		# --proto_path entries stops protoc finding its built-ins.
+		--proto_path="${src}/src"
 		--proto_path="${ROOT}/gcsdk"
 		--proto_path="${ROOT}/game/shared"
 		--proto_path="${ROOT}/game/shared/tf"
