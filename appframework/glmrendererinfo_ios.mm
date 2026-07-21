@@ -9,6 +9,9 @@
 
 #include "GL/gl.h"
 
+// Implemented in appframework/ios_screensize.mm (UIKit-only translation unit).
+extern "C" void IOS_GetScreenPixelSize( int *pWidth, int *pHeight );
+
 #undef MIN
 #undef MAX
 #include "tier0/threadtools.h"
@@ -561,7 +564,26 @@ bool	GLMDisplayDB::GetModeInfo( int rendererIndex, int displayIndex, int modeInd
             infoOut->m_modePixelWidth = mode.w;
             infoOut->m_modePixelHeight = mode.h;
             infoOut->m_modeRefreshHz = mode.refresh_rate > 0 ? mode.refresh_rate : 60;
-            
+
+#if defined( IOS )
+            // SDL reports the display in POINTS (a third of the panel on a 3x
+            // device) while the drawable we present to is full native pixels.
+            // This value is the single source for both the back buffer size and
+            // the video mode, so reporting points made the engine render at
+            // 932x430 and upscale 3x. Report the real resolution and return
+            // before the mode-list lookup below overwrites it.
+            {
+                int pw = 0, ph = 0;
+                IOS_GetScreenPixelSize( &pw, &ph );
+                if ( pw > 0 && ph > 0 )
+                {
+                    infoOut->m_modePixelWidth = pw;
+                    infoOut->m_modePixelHeight = ph;
+                    return false;
+                }
+            }
+#endif
+
             GLMDisplayInfo *dispinfo = (*(*m_renderers)[rendererIndex]->m_displays)[displayIndex];
             FOR_EACH_VEC((*dispinfo->m_modes), i) {
                 GLMDisplayMode *m = (*dispinfo->m_modes)[i];
