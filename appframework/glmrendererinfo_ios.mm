@@ -703,3 +703,20 @@ void	GLMDisplayInfo::Dump( int which )
 		(*m_modes)[i]->Dump(i);
 	}
 }
+
+#import <UIKit/UIKit.h>
+
+// Native screen size in PIXELS (not points). SDL reports both the desktop
+// display mode and the GL drawable in points on iOS, so the engine sizes its
+// viewport to ~1/3 of the real surface on a 3x device and the scene renders
+// into a corner. UIScreen's nativeBounds is physical pixels, always expressed
+// portrait-side-up; we run landscape, so return the long edge as width.
+extern "C" void IOS_GetScreenPixelSize( int *pWidth, int *pHeight )
+{
+	CGRect b = [[UIScreen mainScreen] nativeBounds];
+	int w = (int)b.size.width;
+	int h = (int)b.size.height;
+	if ( w < h ) { int t = w; w = h; h = t; }
+	if ( pWidth )  *pWidth  = w;
+	if ( pHeight ) *pHeight = h;
+}

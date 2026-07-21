@@ -97,6 +97,11 @@ EGLConfig config;
 EGLDisplay native_display;
 #endif
 
+#if defined( IOS )
+// Implemented in glmrendererinfo_ios.mm -- native screen size in pixels.
+extern "C" void IOS_GetScreenPixelSize( int *pWidth, int *pHeight );
+#endif
+
 /*#if IOS
 static void *l_gl4es = NULL;
 static void *l_gles = NULL;
@@ -2286,6 +2291,33 @@ void CSDLMgr::GetNativeDisplayInfo( int nDisplay, uint &nWidth, uint &nHeight, u
 {
 	SDL_DisplayMode mode;
 
+#if defined( IOS )
+	// SDL reports this in points; the EGL/Metal surface is native pixels. Using
+	// points makes the engine render into a corner of the real surface.
+	{
+		int pw = 0, ph = 0;
+		IOS_GetScreenPixelSize( &pw, &ph );
+		if ( pw > 0 && ph > 0 )
+		{
+			nRefreshHz = 60;
+			nWidth  = (uint)pw;
+			nHeight = (uint)ph;
+			static bool s_bLogged = false;
+			if ( !s_bLogged )
+			{
+				s_bLogged = true;
+				int sw = 0, sh = 0;
+				SDL_GetWindowSize( m_Window, &sw, &sh );
+				int dw = 0, dh = 0;
+				SDL_GL_GetDrawableSize( m_Window, &dw, &dh );
+				Msg( "DIAG: GetNativeDisplayInfo native=%dx%d px (SDL window=%dx%d drawable=%dx%d)\n",
+					pw, ph, sw, sh, dw, dh );
+			}
+			return;
+		}
+	}
+#endif
+
 	if ( nDisplay == -1 )
 	{
 		if ( g_bSDLDisplayindexSet )
@@ -2334,8 +2366,14 @@ void CSDLMgr::DisplayedSize( uint &width, uint &height )
 {
 	SDLAPP_FUNC;
 
-	int w, h;
-	SDL_GL_GetDrawableSize(m_Window, &w, &h);
+	int w = 0, h = 0;
+#if defined( IOS )
+	// Must match GetNativeDisplayInfo: the backbuffer is the native-pixel
+	// EGL/Metal surface, not SDL's point-sized report.
+	IOS_GetScreenPixelSize( &w, &h );
+#endif
+	if ( w <= 0 || h <= 0 )
+		SDL_GL_GetDrawableSize(m_Window, &w, &h);
 	width = (uint) w;
 	height = (uint) h;
 }

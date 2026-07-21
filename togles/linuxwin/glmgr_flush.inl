@@ -272,6 +272,16 @@ FORCEINLINE void GLMContext::FlushDrawStates( uint nStartIndex, uint nEndIndex, 
 		}
 
 		float flSRGBWrite = targetIsSRGB ? 1.0f : 0.0f;
+
+		static int s_nSRGBLogged = 0;
+		if ( s_nSRGBLogged < 4 )
+		{
+			s_nSRGBLogged++;
+			Msg( "DIAG: fakeSRGB loc=%d hasGammaWrites=%d fbo=%p targetIsSRGB=%d -> flSRGBWrite=%.1f\n",
+				(int)m_pBoundPair->m_locFragmentFakeSRGBEnable, (int)m_caps.m_hasGammaWrites,
+				(void *)m_boundDrawFBO, (int)targetIsSRGB, flSRGBWrite );
+		}
+
 		if ( m_pBoundPair->m_fakeSRGBEnableValue != flSRGBWrite )
 		{
 			gGL->glUniform1f( m_pBoundPair->m_locFragmentFakeSRGBEnable, flSRGBWrite );
