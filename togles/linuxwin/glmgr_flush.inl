@@ -255,13 +255,23 @@ FORCEINLINE void GLMContext::FlushDrawStates( uint nStartIndex, uint nEndIndex, 
 	m_pBoundPair->UpdateScreenUniform( m_ViewportBox.GetData().widthheight );
 
 	// Fake sRGB: with no hardware gamma writes (the iOS/ES path), pixel shaders
-	// carry an sRGB-encode suffix gated by the "flSRGBWrite" uniform, and the
-	// engine's SRGBWRITEENABLE intent is shunted into m_FakeBlendEnableSRGB
-	// (see WriteBlendEnableSRGB). That value was never pushed to the uniform, so
-	// output stayed linear -- the too-dark ("low gamma") look. Push it here.
+	// carry an sRGB-encode suffix gated by the "flSRGBWrite" uniform. It was
+	// never written, so it defaulted to 0 and output stayed linear -- the
+	// too-dark ("low gamma") look. Drive it from whether the bound draw target
+	// is an sRGB surface: on this backend that surface is a plain RGBA8 texture
+	// that does NOT sRGB-encode in hardware, so the shader must do the encode
+	// (the reference build had targetIsSRGB but wrote 0.0 here -- the bug).
 	if ( m_pBoundPair->m_locFragmentFakeSRGBEnable >= 0 )
 	{
-		float flSRGBWrite = m_FakeBlendEnableSRGB ? 1.0f : 0.0f;
+		bool targetIsSRGB = false;
+		if ( m_boundDrawFBO
+			&& m_boundDrawFBO->m_attach[0].m_tex
+			&& m_boundDrawFBO->m_attach[0].m_tex->m_layout )
+		{
+			targetIsSRGB = ( m_boundDrawFBO->m_attach[0].m_tex->m_layout->m_key.m_texFlags & kGLMTexSRGB ) != 0;
+		}
+
+		float flSRGBWrite = targetIsSRGB ? 1.0f : 0.0f;
 		if ( m_pBoundPair->m_fakeSRGBEnableValue != flSRGBWrite )
 		{
 			gGL->glUniform1f( m_pBoundPair->m_locFragmentFakeSRGBEnable, flSRGBWrite );
