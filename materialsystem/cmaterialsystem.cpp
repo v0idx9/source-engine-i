@@ -1179,10 +1179,39 @@ int	 CMaterialSystem::GetModeCount( int adapter ) const
 //-----------------------------------------------------------------------------
 // Compatability function, should go away eventually
 //-----------------------------------------------------------------------------
-static void ConvertModeStruct( ShaderDeviceInfo_t *pMode, const MaterialSystem_Config_t &config ) 
+static void ConvertModeStruct( ShaderDeviceInfo_t *pMode, const MaterialSystem_Config_t &config )
 {
-	pMode->m_DisplayMode.m_nWidth = config.m_VideoMode.m_Width;					
+	pMode->m_DisplayMode.m_nWidth = config.m_VideoMode.m_Width;
 	pMode->m_DisplayMode.m_nHeight = config.m_VideoMode.m_Height;
+
+#if defined( IOS )
+	// This struct decides the back buffer size, and the back buffer is what the
+	// present blits onto the screen. Left at the config's default (640x480, 4:3)
+	// it is blitted across the real 2.167 surface -- blown up and stretched.
+	// The display cannot change on iOS, so always match it.
+	{
+		ShaderDisplayMode_t displayInfo;
+		memset( &displayInfo, 0, sizeof(displayInfo) );
+		displayInfo.m_nVersion = SHADER_DISPLAY_MODE_VERSION;
+		g_pShaderDeviceMgr->GetCurrentModeInfo( &displayInfo, 0 );
+
+		if ( displayInfo.m_nWidth > 0 && displayInfo.m_nHeight > 0 )
+		{
+			pMode->m_DisplayMode.m_nWidth = displayInfo.m_nWidth;
+			pMode->m_DisplayMode.m_nHeight = displayInfo.m_nHeight;
+
+			static bool s_bLogged = false;
+			if ( !s_bLogged )
+			{
+				s_bLogged = true;
+				Msg( "DIAG: iOS back buffer pinned to display %dx%d (aspect %.3f), config was %dx%d\n",
+					displayInfo.m_nWidth, displayInfo.m_nHeight,
+					displayInfo.m_nHeight ? (float)displayInfo.m_nWidth / (float)displayInfo.m_nHeight : 0.0f,
+					config.m_VideoMode.m_Width, config.m_VideoMode.m_Height );
+			}
+		}
+	}
+#endif
 	pMode->m_DisplayMode.m_Format = config.m_VideoMode.m_Format;			
 	pMode->m_DisplayMode.m_nRefreshRateNumerator = config.m_VideoMode.m_RefreshRate;	
 	pMode->m_DisplayMode.m_nRefreshRateDenominator = config.m_VideoMode.m_RefreshRate ? 1 : 0;	
