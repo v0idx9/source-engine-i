@@ -1762,7 +1762,23 @@ void CSDLMgr::SizeWindow( int width, int tall )
 	m_nMouseTargetY = m_WindowHeight / 2;
 	m_nWarpDelta = Max( m_WindowHeight / 3, 200 );
 
+#if !defined( IOS )
 	SDL_SetWindowSize( m_Window, width, tall );
+#else
+	// On iOS the window is always the full screen and must not be resized: these
+	// dimensions are the surface size in PIXELS, but SDL_SetWindowSize takes
+	// POINTS. Passing pixels here blows the window (and with it the Metal
+	// drawable) up by the screen scale, which is what made the image look
+	// stretched/zoomed. The viewport below is what actually matters.
+	{
+		static bool s_bLogged = false;
+		if ( !s_bLogged )
+		{
+			s_bLogged = true;
+			Msg( "DIAG: SizeWindow viewport=%dx%d (SDL window resize skipped on iOS)\n", width, tall );
+		}
+	}
+#endif
 
 #if defined( DX_TO_GL_ABSTRACTION )
 	gGL->glViewport(0, 0, (GLsizei) width, (GLsizei) tall);
