@@ -110,7 +110,7 @@ def build(bld):
 					includes += [_dir]
 		else:
 			bld.fatal('TF2 build needs generated protobuf sources, but %s is missing. Run scripts/build-ios-deps.sh with BUILD_PROTOBUF=1.' % gen_dir)
-		libs += ['PROTOBUF']
+		libs += ['PROTOBUF', 'gcsdk']
 	includes += game["includes"]
 	defines = game["defines"]
 

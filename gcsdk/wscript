@@ -1,0 +1,84 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+# Game Coordinator SDK. TF2's econ / item-schema layer links against this as a
+# static library ($Lib gcsdk in gcsdk_game_include.vpc), so it is only added to
+# the project list when building TF2. The source list mirrors gcsdk_game.vpc,
+# which is the client-side subset -- the GC-server and SQL sources next to it
+# are deliberately not built.
+
+import os
+
+top = '.'
+PROJECT_NAME = 'gcsdk'
+
+def options(opt):
+	# stub
+	return
+
+def configure(conf):
+	return
+
+def build(bld):
+	source = [
+		'gcclient.cpp',
+		'gcclient_sharedobjectcache.cpp',
+		'gcconstants.cpp',
+		'gclogger.cpp',
+		'gcmsg.cpp',
+		'job.cpp',
+		'jobmgr.cpp',
+		'jobtime.cpp',
+		'messagelist.cpp',
+		'msgprotobuf.cpp',
+		'netpacket.cpp',
+		'netpacketpool.cpp',
+		'protobufsharedobject.cpp',
+		'sharedobject.cpp',
+		'sharedobjectcache.cpp',
+		'stdafx.cpp',
+		'webapi_response.cpp',
+		'workthreadpool.cpp',
+		'steamextra/misc.cpp',
+		'steamextra/rtime.cpp',
+		'steamextra/steamid.cpp',
+		'steamextra/tier1/hashglobals.cpp',
+		'steamextra/tier1/tsmempool.cpp',
+		'steamextra/tier1/tsmultimempool.cpp',
+	]
+
+	includes = [
+		'.',
+		'steamextra',
+		'../',
+		'../common',
+		'../public',
+		'../public/gcsdk',
+		'../public/tier0',
+		'../public/tier1',
+	]
+
+	# The generated protobuf headers and the protobuf runtime headers.
+	gen_dir = os.path.normpath(os.path.join(bld.path.abspath(), '..', 'game', 'shared', 'generated_proto'))
+	includes += [
+		os.path.normpath(os.path.join(bld.path.abspath(), '..', 'thirdparty', 'protobuf', 'include')),
+		gen_dir,
+	]
+
+	# gcsdk_game.vpc defines TF here: a few steamextra files change behaviour
+	# based on it, so the library must be built the same way its callers are.
+	defines = ['TF']
+
+	libs = ['PROTOBUF']
+
+	bld.stlib(
+		source   = source,
+		target   = PROJECT_NAME,
+		name     = PROJECT_NAME,
+		features = 'c cxx',
+		includes = includes,
+		defines  = defines,
+		use      = libs,
+		subsystem = bld.env.MSVC_SUBSYSTEM,
+		idx      = bld.get_taskgen_count()
+	)

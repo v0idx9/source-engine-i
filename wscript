@@ -539,6 +539,10 @@ def configure(conf):
 	elif conf.env.GL:
 		projects['game'] += ['togl']
 
+	# TF2's econ layer links the Game Coordinator SDK as a static library.
+	if conf.env.GAMES == 'tf':
+		projects['game'] += ['gcsdk']
+
 	if conf.env.DEST_OS == 'win32':
 		projects['game'] += ['utils/bzip2']
 		projects['dedicated'] += ['utils/bzip2']
@@ -770,5 +774,8 @@ def build(bld):
 			projects['game'] += ['togles']
 		elif bld.env.GL:
 			projects['game'] += ['togl']
+
+		if bld.env.GAMES == 'tf':
+			projects['game'] += ['gcsdk']
 
 		bld.add_subproject(projects['game'])
