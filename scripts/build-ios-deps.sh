@@ -350,11 +350,15 @@ build_protobuf() {
 		# protobuf's own src, so the well-known types resolve: several of these
 		# import google/protobuf/descriptor.proto, and passing explicit
 		# --proto_path entries stops protoc finding its built-ins.
-		--proto_path="${src}/src"
-		--proto_path="${ROOT}/gcsdk"
-		--proto_path="${ROOT}/game/shared"
+		# Most specific first: protoc mirrors each proto's path relative to the
+		# FIRST matching --proto_path, so listing game/shared before
+		# game/shared/tf emitted tf_gcmessages.pb.h into a tf/ subdirectory and
+		# the #include (which is flat) could not find it.
 		--proto_path="${ROOT}/game/shared/tf"
 		--proto_path="${ROOT}/game/shared/econ"
+		--proto_path="${ROOT}/game/shared"
+		--proto_path="${ROOT}/gcsdk"
+		--proto_path="${src}/src"
 	)
 	for proto in gcsdk/steammessages.proto \
 	             gcsdk/gcsystemmsgs.proto \

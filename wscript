@@ -275,8 +275,14 @@ def define_platform(conf):
 		# gcsdk headers (msgprotobuf.h etc.) include the generated *.pb.h
 		# directly, so these must be visible engine-wide, not just to game/.
 		for _p in ('thirdparty/protobuf/include', 'game/shared/generated_proto'):
-			if os.path.isdir(os.path.abspath(_p)):
-				conf.env.append_unique('INCLUDES', [os.path.abspath(_p)])
+			_abs = os.path.abspath(_p)
+			if os.path.isdir(_abs):
+				conf.env.append_unique('INCLUDES', [_abs])
+				# Include any subdirectory too, in case protoc mirrored a
+				# proto's source layout instead of emitting it flat.
+				for _d, _subdirs, _files in os.walk(_abs):
+					if _d != _abs and any(f.endswith('.pb.h') for f in _files):
+						conf.env.append_unique('INCLUDES', [_d])
 		if not conf.env.IOS:
 			conf.env.append_unique('DEFINES', [
 				'OSX=1', '_OSX=1'

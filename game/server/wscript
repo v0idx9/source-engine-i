@@ -71,16 +71,30 @@ def build(bld):
 	# build-ios-deps.sh stages the headers and generates the .pb.cc sources.
 	if bld.env.GAMES == 'tf':
 		import os
-		gen_dir = os.path.abspath('../shared/generated_proto')
+		# Resolve against this wscript's own directory. os.path.abspath() alone
+		# would resolve against waf's launch directory (the repo root) and
+		# silently yield a path that does not exist, which meant the generated
+		# .pb.cc sources below were never added to the build.
+		here = bld.path.abspath()
+		gen_dir = os.path.normpath(os.path.join(here, '..', 'shared', 'generated_proto'))
 		includes += [
-			os.path.abspath('../../thirdparty/protobuf/include'),
+			os.path.normpath(os.path.join(here, '..', '..', 'thirdparty', 'protobuf', 'include')),
 			gen_dir,
 			'../shared/tf',
 			'../shared/econ',
 			'tf',
 		]
 		if os.path.isdir(gen_dir):
-			source += [os.path.join(gen_dir, f) for f in sorted(os.listdir(gen_dir)) if f.endswith('.pb.cc')]
+			# Walk, so a proto that protoc chose to emit into a subdirectory is
+			# still compiled and its header still reachable.
+			for _dir, _subdirs, _files in os.walk(gen_dir):
+				_pb = [os.path.join(_dir, f) for f in sorted(_files) if f.endswith('.pb.cc')]
+				if _pb:
+					source += _pb
+				if _dir != gen_dir:
+					includes += [_dir]
+		else:
+			bld.fatal('TF2 build needs generated protobuf sources, but %s is missing. Run scripts/build-ios-deps.sh with BUILD_PROTOBUF=1.' % gen_dir)
 		libs += ['PROTOBUF']
 
 	defines.remove('PROTECTED_THINGS_ENABLE')
