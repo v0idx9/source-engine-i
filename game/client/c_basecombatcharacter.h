@@ -97,6 +97,11 @@ public:
 #ifdef GLOWS_ENABLE
 	CGlowObject			*GetGlowObject( void ){ return m_pGlowEffect; }
 	virtual void		GetGlowEffectColor( float *r, float *g, float *b );
+
+	// Client-side-only glow, used for spectating. Kept separate from the
+	// networked m_bGlowEnabled so the two cannot clobber each other.
+	void				SetClientSideGlowEnabled( bool bEnabled ){ m_bClientSideGlowEnabled = bEnabled; UpdateGlowEffect(); }
+	bool				IsClientSideGlowEnabled( void ){ return m_bClientSideGlowEnabled; }
 #endif // GLOWS_ENABLE
 
 public:
@@ -121,6 +126,7 @@ private:
 	CHandle< C_BaseCombatWeapon > m_hActiveWeapon;
 
 #ifdef GLOWS_ENABLE
+	bool				m_bClientSideGlowEnabled;
 	bool				m_bGlowEnabled;
 	bool				m_bOldGlowEnabled;
 	CGlowObject			*m_pGlowEffect;

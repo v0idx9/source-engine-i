@@ -32,6 +32,7 @@ C_BaseCombatCharacter::C_BaseCombatCharacter()
 
 #ifdef GLOWS_ENABLE
 	m_pGlowEffect = NULL;
+	m_bClientSideGlowEnabled = false;
 	m_bGlowEnabled = false;
 	m_bOldGlowEnabled = false;
 #endif // GLOWS_ENABLE
@@ -125,7 +126,7 @@ void C_BaseCombatCharacter::UpdateGlowEffect( void )
 	}
 
 	// create a new effect
-	if ( m_bGlowEnabled )
+	if ( m_bGlowEnabled || m_bClientSideGlowEnabled )
 	{
 		float r, g, b;
 		GetGlowEffectColor( &r, &g, &b );

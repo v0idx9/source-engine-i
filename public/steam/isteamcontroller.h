@@ -203,6 +203,11 @@ public:
 	
 	// Trigger a haptic pulse on a controller
 	virtual void TriggerHapticPulse( ControllerHandle_t controllerHandle, ESteamControllerPad eTargetPad, unsigned short usDurationMicroSec ) = 0;
+
+	// Returns a localised string for an action origin. Added in a later
+	// Steamworks SDK than the one bundled here; TF2's target-ID HUD calls it.
+	virtual const char *GetStringForActionOrigin( EControllerActionOrigin eOrigin ) = 0;
+
 };
 
 #define STEAMCONTROLLER_INTERFACE_VERSION "SteamController003"
