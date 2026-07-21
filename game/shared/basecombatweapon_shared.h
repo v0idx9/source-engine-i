@@ -55,8 +55,7 @@ class CUserCmd;
 // Put this in your derived class definition to declare it's activity table
 // UNDONE: Cascade these?
 #define DECLARE_ACTTABLE()		static acttable_t m_acttable[];\
-	acttable_t *ActivityList( void );\
-	int ActivityListCount( void );
+	virtual acttable_t *ActivityList( int &iActivityCount );
 
 // You also need to include the activity table itself in your class' implementation:
 // e.g.
@@ -73,8 +72,7 @@ class CUserCmd;
 // activity table.
 // UNDONE: Cascade these?
 #define IMPLEMENT_ACTTABLE(className) \
-	acttable_t *className::ActivityList( void ) { return m_acttable; } \
-	int className::ActivityListCount( void ) { return ARRAYSIZE(m_acttable); } \
+	acttable_t *className::ActivityList( int &iActivityCount ) { iActivityCount = ARRAYSIZE(m_acttable); return m_acttable; } \
 
 typedef struct
 {
@@ -265,7 +263,15 @@ public:
 	bool					DefaultReload( int iClipSize1, int iClipSize2, int iActivity );
 	bool					ReloadsSingly( void ) const;
 
-	virtual bool			AutoFiresFullClip( void ) { return false; }
+	virtual bool			AutoFiresFullClip( void ) const { return false; }
+
+	// Present in the TF2-era weapon base; TF2's weapons override these, so the
+	// signatures must match exactly or the override is silently a new method.
+	virtual bool			CanPerformSecondaryAttack( void ) const;
+	virtual bool			ForceWeaponSwitch( void ) const { return false; }
+	virtual bool			UsesCenterFireProjectile( void ) const { return false; }
+	virtual float			GetNextSecondaryAttackDelay( void ) { return 0.5f; }
+	virtual const Vector&	GetViewmodelOffset( void ) { return vec3_origin; }
 	virtual bool			CanOverload( void ) { return false; }
 	virtual void			UpdateAutoFire( void );
 
@@ -386,8 +392,7 @@ public:
 	virtual CHudTexture const	*GetSpriteZoomedAutoaim( void ) const;
 
 	virtual Activity		ActivityOverride( Activity baseAct, bool *pRequired );
-	virtual	acttable_t*		ActivityList( void ) { return NULL; }
-	virtual	int				ActivityListCount( void ) { return 0; }
+	virtual	acttable_t*		ActivityList( int &iActivityCount ) { iActivityCount = 0; return NULL; }
 
 	virtual void			Activate( void );
 

@@ -1482,6 +1482,15 @@ void Panel::SetParent(VPANEL newParent)
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Purpose: Bridges the IClientPanel notification to the Panel* form that
+//			derived classes override.
+//-----------------------------------------------------------------------------
+void Panel::OnChildRemoved(VPANEL child)
+{
+	OnChildRemoved( ipanel()->GetPanel( child, GetControlsModuleName() ) );
+}
+
 void Panel::OnChildAdded(VPANEL child)
 {
 	Assert( !_flags.IsFlagSet( IN_PERFORM_LAYOUT ) );

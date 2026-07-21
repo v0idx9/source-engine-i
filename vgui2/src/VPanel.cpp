@@ -485,6 +485,10 @@ void VPanel::SetParent(VPanel *newParent)
 
 	if (_parent != NULL)
 	{
+		if (_parent->Client())
+		{
+			_parent->Client()->OnChildRemoved((VPANEL)this);
+		}
 		_parent->_childDar.RemoveElement(this);
 		_parent = null;
 	}

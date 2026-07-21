@@ -1647,6 +1647,11 @@ void CBaseCombatWeapon::ItemPreFrame( void )
 //====================================================================================
 // WEAPON BEHAVIOUR
 //====================================================================================
+bool CBaseCombatWeapon::CanPerformSecondaryAttack() const
+{
+	return m_flNextSecondaryAttack <= gpGlobals->curtime;
+}
+
 void CBaseCombatWeapon::ItemPostFrame( void )
 {
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
@@ -2422,8 +2427,8 @@ bool CBaseCombatWeapon::IsLocked( CBaseEntity *pAsker )
 //-----------------------------------------------------------------------------
 Activity CBaseCombatWeapon::ActivityOverride( Activity baseAct, bool *pRequired )
 {
-	acttable_t *pTable = ActivityList();
-	int actCount = ActivityListCount();
+	int actCount = 0;
+	acttable_t *pTable = ActivityList( actCount );
 
 	for ( int i = 0; i < actCount; i++, pTable++ )
 	{

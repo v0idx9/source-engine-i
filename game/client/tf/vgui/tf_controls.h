@@ -11,6 +11,7 @@
 #pragma once
 #endif
 
+#include "steam/steam_api.h"
 #include <vgui/IScheme.h>
 #include <vgui/KeyCode.h>
 #include <KeyValues.h>

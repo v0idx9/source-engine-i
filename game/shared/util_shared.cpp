@@ -1175,3 +1175,29 @@ const char* UTIL_GetActiveHolidayString()
 	return NULL;
 #endif
 }
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Resolves a soundscript entry to one of its wave files, choosing at
+//			random when the entry lists more than one.
+//-----------------------------------------------------------------------------
+extern ISoundEmitterSystemBase *soundemitterbase;
+
+const char *UTIL_GetRandomSoundFromEntry( const char* pszEntryName )
+{
+	Assert( pszEntryName );
+
+	if ( pszEntryName && soundemitterbase )
+	{
+		int soundIndex = soundemitterbase->GetSoundIndex( pszEntryName );
+		CSoundParametersInternal *internal = ( soundIndex != -1 ) ? soundemitterbase->InternalGetParametersForSound( soundIndex ) : NULL;
+		// See if we need to pick a random one
+		if ( internal && internal->NumSoundNames() > 0 )
+		{
+			int wave = RandomInt( 0, internal->NumSoundNames() - 1 );
+			pszEntryName = soundemitterbase->GetWaveName( internal->GetSoundNames()[wave].symbol );
+		}
+	}
+
+	return pszEntryName;
+}

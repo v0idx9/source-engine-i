@@ -579,12 +579,26 @@ public:
 private:
 	float m_duration;
 	float m_timestamp;
-	float Now( void ) const;		// work-around since client header doesn't like inlined gpGlobals->curtime
+	virtual float Now( void ) const;		// work-around since client header doesn't like inlined gpGlobals->curtime
+};
+
+// A countdown timer running off wall-clock time rather than game time, so it
+// keeps counting while the game is paused or loading.
+class RealTimeCountdownTimer : public CountdownTimer
+{
+	virtual float Now( void ) const OVERRIDE
+	{
+		return Plat_FloatTime();
+	}
 };
 
 char* ReadAndAllocStringValue( KeyValues *pSub, const char *pName, const char *pFilename = NULL );
 
 int UTIL_StringFieldToInt( const char *szValue, const char **pValueStrings, int iNumStrings );
+
+// Resolves a soundscript entry to one of its wave files, picking at random
+// when the entry lists several.
+const char *UTIL_GetRandomSoundFromEntry( const char* pszEntryName );
 
 //-----------------------------------------------------------------------------
 // Holidays

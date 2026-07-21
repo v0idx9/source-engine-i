@@ -59,6 +59,8 @@ class CSaveRestoreData;
 struct typedescription_t;
 class ISave;
 class IRestore;
+class IHasAttributes;
+
 class CBaseEntity;
 class CEntityMapData;
 class CBaseCombatWeapon;
@@ -1836,6 +1838,15 @@ public:
 	{
 		return s_bAbsQueriesValid;
 	}
+public:
+	// Return the IHasAttributes interface for this entity, avoiding a
+	// dynamic_cast at every call site. Set by the leaf class constructor.
+	inline IHasAttributes *GetHasAttributesInterfacePtr() const { return m_pAttributes; }
+
+protected:
+	void SetHasAttributesInterfacePtr( IHasAttributes *pAttributes ) { m_pAttributes = pAttributes; }
+	IHasAttributes *m_pAttributes;
+
 };
 
 // Send tables exposed in this module.

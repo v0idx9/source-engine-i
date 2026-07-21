@@ -171,6 +171,8 @@ struct thinkfunc_t
 //-----------------------------------------------------------------------------
 // Purpose: Base client side entity object
 //-----------------------------------------------------------------------------
+class IHasAttributes;
+
 class C_BaseEntity : public IClientEntity
 {
 // Construction
@@ -686,7 +688,7 @@ public:
 
 	virtual bool					ShouldDraw();
 	inline	bool					IsVisible() const { return m_hRender != INVALID_CLIENT_RENDER_HANDLE; }
-			void					UpdateVisibility();
+	virtual void					UpdateVisibility();
 	
 	// Returns true if the entity changes its position every frame on the server but it doesn't
 	// set animtime. In that case, the client returns true here so it copies the server time to
@@ -1687,6 +1689,15 @@ protected:
 	RenderMode_t m_PreviousRenderMode;
 	color32 m_PreviousRenderColor;
 #endif
+public:
+	// Return the IHasAttributes interface for this entity, avoiding a
+	// dynamic_cast at every call site. Set by the leaf class constructor.
+	inline IHasAttributes *GetHasAttributesInterfacePtr() const { return m_pAttributes; }
+
+protected:
+	void SetHasAttributesInterfacePtr( IHasAttributes *pAttributes ) { m_pAttributes = pAttributes; }
+	IHasAttributes *m_pAttributes;
+
 };
 
 EXTERN_RECV_TABLE(DT_BaseEntity);

@@ -230,6 +230,9 @@ enum CastVote
 	#define MAX_PLAYERS				33  // Absolute max players supported
 #endif
 
+// Arrays indexed by entindex need one extra slot: entity indices are 1-based.
+#define MAX_PLAYERS_ARRAY_SAFE		( MAX_PLAYERS + 1 )
+
 #define MAX_PLACE_NAME_LENGTH		18
 
 #define MAX_FOV						110

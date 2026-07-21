@@ -425,6 +425,9 @@ private:
 friend class CFlexCycler;
 friend class CCycler;
 friend class CBlendingCycler;
+public:
+	virtual IMaterial* GetEconWeaponMaterialOverride( int iTeam ) { return NULL; }
+
 };
 
 //-----------------------------------------------------------------------------

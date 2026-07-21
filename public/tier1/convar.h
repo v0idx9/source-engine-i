@@ -529,6 +529,17 @@ private:
 	ConVar *m_pConVarState;
 };
 
+//-----------------------------------------------------------------------------
+// Purpose: ConVar reference used by the TF2 UI controls. Tolerates a missing
+//			convar so menus can be constructed before the convar is registered.
+//-----------------------------------------------------------------------------
+class UIConVarRef : public ConVarRef
+{
+public:
+	UIConVarRef( const char *pName, bool bIgnoreMissing = true ) : ConVarRef( pName, bIgnoreMissing ) {}
+};
+
+
 
 //-----------------------------------------------------------------------------
 // Did we find an existing convar of that name?

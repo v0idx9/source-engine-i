@@ -52,6 +52,7 @@ public:
 	virtual void GetInset(int &top, int &left, int &right, int &bottom) = 0;
 	virtual void GetClipRect(int &x0, int &y0, int &x1, int &y1) = 0;
 	virtual void OnChildAdded(VPANEL child) = 0;
+	virtual void OnChildRemoved(VPANEL child) = 0;
 	virtual void OnSizeChanged(int newWide, int newTall) = 0;
 
 	virtual void InternalFocusChanged(bool lost) = 0;

@@ -633,6 +633,9 @@ private:
 	mutable CStudioHdr				*m_pStudioHdr;
 	mutable MDLHandle_t				m_hStudioHdr;
 	CThreadFastMutex				m_StudioHdrInitLock;
+public:
+	virtual IMaterial* GetEconWeaponMaterialOverride( int iTeam ) { return NULL; }
+
 };
 
 enum 
