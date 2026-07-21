@@ -271,15 +271,21 @@ FORCEINLINE void GLMContext::FlushDrawStates( uint nStartIndex, uint nEndIndex, 
 			targetIsSRGB = ( m_boundDrawFBO->m_attach[0].m_tex->m_layout->m_key.m_texFlags & kGLMTexSRGB ) != 0;
 		}
 
-		float flSRGBWrite = targetIsSRGB ? 1.0f : 0.0f;
+		// Mirror what glEnable(GL_FRAMEBUFFER_SRGB) would do on desktop: encode
+		// only when the engine actually asked for an sRGB write for this draw
+		// AND the target is sRGB. The shader API drives that per shader state
+		// (D3DRS_SRGBWRITEENABLE -> WriteBlendEnableSRGB -> m_FakeBlendEnableSRGB
+		// while faking). Keying off the target alone encodes passes that did not
+		// want it, which blows the image out.
+		float flSRGBWrite = ( targetIsSRGB && m_FakeBlendEnableSRGB ) ? 1.0f : 0.0f;
 
 		static int s_nSRGBLogged = 0;
-		if ( s_nSRGBLogged < 4 )
+		if ( s_nSRGBLogged < 6 )
 		{
 			s_nSRGBLogged++;
-			Msg( "DIAG: fakeSRGB loc=%d hasGammaWrites=%d fbo=%p targetIsSRGB=%d -> flSRGBWrite=%.1f\n",
+			Msg( "DIAG: fakeSRGB loc=%d hasGammaWrites=%d targetIsSRGB=%d wantSRGBWrite=%d -> flSRGBWrite=%.1f\n",
 				(int)m_pBoundPair->m_locFragmentFakeSRGBEnable, (int)m_caps.m_hasGammaWrites,
-				(void *)m_boundDrawFBO, (int)targetIsSRGB, flSRGBWrite );
+				(int)targetIsSRGB, (int)m_FakeBlendEnableSRGB, flSRGBWrite );
 		}
 
 		if ( m_pBoundPair->m_fakeSRGBEnableValue != flSRGBWrite )

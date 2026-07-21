@@ -1451,11 +1451,7 @@ void CSDLMgr::ShowPixels( CShowPixelsParams *params )
 
 	}
 
-// iOS needs this too: the engine renders the frame into an offscreen texture
-// and this blit is what scales it onto the real surface. It was OSX-only, so on
-// iOS nothing ever presented the render target at the surface's geometry. The
-// reference build does exactly this ("Present blit src=1398x645 -> dst=2796x1290").
-#if defined( OSX ) || defined( IOS )
+#ifdef OSX
 	if (!params->m_noBlit)
 	{
 		if ( params->m_useBlit ) // FBO blit path - which is what we *should* be using.  But if the params say no, then don't do it because the ext is not there.
@@ -1575,10 +1571,6 @@ void CSDLMgr::ShowPixels( CShowPixelsParams *params )
 #endif
 
 		}
-#if defined( OSX )
-		// Legacy immediate-mode present (glBegin/glVertex3f/glTexCoord2f).
-		// Desktop GL only -- those entry points do not exist in OpenGL ES,
-		// so iOS always uses the FBO blit path above.
 		else
 		{
 			// old blit - gets very dark output with sRGB sources... not good
@@ -1654,7 +1646,6 @@ void CSDLMgr::ShowPixels( CShowPixelsParams *params )
 			}
 
 		}
-#endif // OSX
 	}
 #endif
 
