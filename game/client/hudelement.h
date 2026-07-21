@@ -123,6 +123,9 @@ private:
 	bool						m_bIsParentedToClientDLLRootPanel;
 
 	CUtlVector< int >			m_HudRenderGroups;
+
+public:
+	// Which controller action set this element wants active while it is up.
 	virtual GameActionSet_t GetPreferredActionSet() { return GAME_ACTION_SET_NONE; }
 
 };
