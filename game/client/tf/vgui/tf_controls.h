@@ -11,7 +11,6 @@
 #pragma once
 #endif
 
-#include "steam/steam_api.h"
 #include <vgui/IScheme.h>
 #include <vgui/KeyCode.h>
 #include <KeyValues.h>
@@ -477,15 +476,15 @@ public:
 		{
 			if ( i == 0 )
 			{
-				g_pVGuiLocalize->ConstructString_safe( wszMembers, L"%s1", 1, CStrAutoEncode( SteamFriends()->GetFriendPersonaName( vecBlameSteamIDs[ i ] ) ).ToWString() );
+				g_pVGuiLocalize->ConstructString_safe( wszMembers, L"%s1", 1, CStrAutoEncode( steamapicontext->SteamFriends()->GetFriendPersonaName( vecBlameSteamIDs[ i ] ) ).ToWString() );
 			}
 			else if ( i == vecBlameSteamIDs.Count() - 1 )
 			{
-				g_pVGuiLocalize->ConstructString_safe( wszMembers, g_pVGuiLocalize->Find( "#TF_PartyMemberState_LastTwo" ), 2, CStrAutoEncode( wszMembers ).ToWString(), CStrAutoEncode( SteamFriends()->GetFriendPersonaName( vecBlameSteamIDs[ i ] ) ).ToWString() );
+				g_pVGuiLocalize->ConstructString_safe( wszMembers, g_pVGuiLocalize->Find( "#TF_PartyMemberState_LastTwo" ), 2, CStrAutoEncode( wszMembers ).ToWString(), CStrAutoEncode( steamapicontext->SteamFriends()->GetFriendPersonaName( vecBlameSteamIDs[ i ] ) ).ToWString() );
 			}
 			else
 			{
-				g_pVGuiLocalize->ConstructString_safe( wszMembers, L"%s1, %s2", 2, CStrAutoEncode( wszMembers ).ToWString(), CStrAutoEncode( SteamFriends()->GetFriendPersonaName( vecBlameSteamIDs[ i ] ) ).ToWString() );
+				g_pVGuiLocalize->ConstructString_safe( wszMembers, L"%s1, %s2", 2, CStrAutoEncode( wszMembers ).ToWString(), CStrAutoEncode( steamapicontext->SteamFriends()->GetFriendPersonaName( vecBlameSteamIDs[ i ] ) ).ToWString() );
 			}
 		}
 

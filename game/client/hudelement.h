@@ -14,6 +14,7 @@
 #include "hud_element_helper.h"
 #include "networkvar.h"
 #include "GameEventListener.h"
+#include "inputsystem/InputEnums.h"
 #include "tier0/memdbgon.h"
 #undef new
 
@@ -122,6 +123,8 @@ private:
 	bool						m_bIsParentedToClientDLLRootPanel;
 
 	CUtlVector< int >			m_HudRenderGroups;
+	virtual GameActionSet_t GetPreferredActionSet() { return GAME_ACTION_SET_NONE; }
+
 };
 
 #include "utlpriorityqueue.h"

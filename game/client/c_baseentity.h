@@ -686,6 +686,11 @@ public:
 	// is put into the spatial partition.
 	virtual CollideType_t			GetCollideType( void );
 
+	virtual bool					IsVisibleToTargetID( void ) const { return false; }
+	virtual bool					IsHealthBarVisible( void ) const { return false; }
+	virtual void					ClientAdjustStartSoundParams( struct EmitSound_t &params ) {}
+	virtual void					ClientAdjustStartSoundParams( struct StartSoundParams_t &params ) {}
+
 	virtual bool					ShouldDraw();
 	inline	bool					IsVisible() const { return m_hRender != INVALID_CLIENT_RENDER_HANDLE; }
 	virtual void					UpdateVisibility();

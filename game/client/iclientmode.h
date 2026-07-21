@@ -148,8 +148,19 @@ public:
 	virtual bool	IsInfoPanelAllowed() = 0;
 	virtual void	InfoPanelDisplayed() = 0;
 	virtual bool	IsHTMLInfoPanelAllowed() = 0;
+
+	// Demo recording notifications, driven by the engine through
+	// IBaseClientDLL::OnDemoRecordStart/Stop (engine/cl_demo.cpp).
+	virtual void	OnDemoRecordStart( char const* pDemoBaseName ) {}
+	virtual void	OnDemoRecordStop() {}
+
+	virtual bool	BCanSendPartyChatMessages() const { return false; }
+
 };	
 
+
+// Demo recording notifications. The engine drives these through
+// IBaseClientDLL (see engine/cl_demo.cpp), which forwards to the client mode.
 extern IClientMode *g_pClientMode;
 
 #endif

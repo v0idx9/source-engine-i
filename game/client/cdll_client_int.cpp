@@ -2441,10 +2441,18 @@ bool CHLClient::CanRecordDemo( char *errorMsg, int length ) const
 
 void CHLClient::OnDemoRecordStart( char const* pDemoBaseName )
 {
+	if ( g_pClientMode )
+	{
+		g_pClientMode->OnDemoRecordStart( pDemoBaseName );
+	}
 }
 
 void CHLClient::OnDemoRecordStop()
 {
+	if ( g_pClientMode )
+	{
+		g_pClientMode->OnDemoRecordStop();
+	}
 }
 
 void CHLClient::OnDemoPlaybackStart( char const* pDemoBaseName )
@@ -2557,40 +2565,11 @@ void CHLClient::ClientAdjustStartSoundParams( StartSoundParams_t& params )
 	CBaseEntity *pEntity = ClientEntityList().GetEnt( params.soundsource );
 
 	// A player speaking
-	if ( params.entchannel == CHAN_VOICE && GameRules() && pEntity && pEntity->IsPlayer() )
+	if ( ( params.entchannel == CHAN_VOICE ) && pEntity && pEntity->IsPlayer() )
 	{
-		// Use high-pitched voices for other players if the local player has an item that allows them to hear it (Pyro Goggles)
-		if ( !GameRules()->IsLocalPlayer( params.soundsource ) && IsLocalPlayerUsingVisionFilterFlags( TF_VISION_FILTER_PYRO ) )
-		{
-			params.pitch *= 1.3f;
-		}
-		// Halloween voice futzery?
-		else
-		{
-			float flHeadScale = 1.f;
-			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pEntity, flHeadScale, head_scale );
-
-			int iHalloweenVoiceSpell = 0;
-			CALL_ATTRIB_HOOK_INT_ON_OTHER( pEntity, iHalloweenVoiceSpell, halloween_voice_modulation );
-			if ( iHalloweenVoiceSpell > 0 )
-			{
-				params.pitch *= 0.8f;
-			}
-			else if( flHeadScale != 1.f )
-			{
-				// Big head, deep voice
-				if( flHeadScale > 1.f )
-				{
-					params.pitch *= 0.8f;
-				}
-				else	// Small head, high voice
-				{
-					params.pitch *= 1.3f;
-				}
-			}
-		}
+		pEntity->ClientAdjustStartSoundParams( params );
 	}
-#endif
+#endif // TF_CLIENT_DLL
 }
 
 const char* CHLClient::TranslateEffectForVisionFilter( const char *pchEffectType, const char *pchEffectName )

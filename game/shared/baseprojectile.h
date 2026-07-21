@@ -41,10 +41,14 @@ public:
 	void IncrementDestroyableHitCount( void ) { ++m_iDestroyableHitCount; }
 #endif // GAME_DLL
 
-	virtual bool IsDestroyable( void ) { return false; }
+	virtual bool IsDestroyable( bool bOrbAttack = false ) { return false; }
 	virtual void Destroy( bool bBlinkOut = true, bool bBreakRocket = false ) {}
+	virtual void SetLauncher( CBaseEntity *pLauncher );
+	CBaseEntity *GetOriginalLauncher() const { return m_hOriginalLauncher; }
 
 protected:
+	CNetworkHandle( CBaseEntity, m_hOriginalLauncher );
+
 #ifdef GAME_DLL
 	int m_iDestroyableHitCount;
 #endif // GAME_DLL
