@@ -208,6 +208,12 @@ def define_platform(conf):
 	if conf.options.TOGLES:
 		conf.env.append_unique('DEFINES', ['TOGLES'])
 
+	# We build against the public Source SDK, so vpc entries gated on
+	# [!$SOURCESDK] (Valve-internal files that were never shipped, e.g.
+	# econ_item_schema_private.cpp) must be excluded. compute_statement treats an
+	# undeclared symbol as false, which would otherwise pull them in.
+	conf.env.append_unique('DEFINES', ['SOURCESDK'])
+
 	if conf.env.ANGLE:
 		conf.env.append_unique('DEFINES', ['ANGLE'])
 
