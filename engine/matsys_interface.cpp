@@ -674,6 +674,20 @@ static void OverrideMaterialSystemConfigFromCommandLine( MaterialSystem_Config_t
 	config.m_VideoMode.m_Width = MIN( videoMode.m_Width, config.m_VideoMode.m_Width );
 	config.m_VideoMode.m_Height = MIN( videoMode.m_Height, config.m_VideoMode.m_Height );
 
+#if defined( IOS )
+	// The display is the whole screen and cannot be changed, so always render at
+	// its exact resolution. Otherwise we inherit the 640x480 default (4:3) while
+	// presenting to a 2.167 surface, which stretches the image horizontally.
+	if ( videoMode.m_Width > 0 && videoMode.m_Height > 0 )
+	{
+		config.m_VideoMode.m_Width = videoMode.m_Width;
+		config.m_VideoMode.m_Height = videoMode.m_Height;
+		Msg( "DIAG: iOS forcing video mode to display %dx%d (aspect %.3f)\n",
+			videoMode.m_Width, videoMode.m_Height,
+			videoMode.m_Height ? (float)videoMode.m_Width / (float)videoMode.m_Height : 0.0f );
+	}
+#endif
+
 	// safe mode
 	if ( CommandLine()->FindParm( "-safe" ) )
 	{
