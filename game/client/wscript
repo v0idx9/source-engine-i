@@ -102,8 +102,13 @@ def build(bld):
 		if os.path.isdir(gen_dir):
 			# Walk, so a proto that protoc chose to emit into a subdirectory is
 			# still compiled and its header still reachable.
+			# These live outside the project tree, so they have to be handed to
+			# waf as Node objects: a plain absolute path string is resolved
+			# relative to this wscript's node and would never be found.
 			for _dir, _subdirs, _files in os.walk(gen_dir):
-				_pb = [os.path.join(_dir, f) for f in sorted(_files) if f.endswith('.pb.cc')]
+				_pb = [bld.root.find_node(os.path.join(_dir, f))
+				       for f in sorted(_files) if f.endswith('.pb.cc')]
+				_pb = [n for n in _pb if n is not None]
 				if _pb:
 					source += _pb
 				if _dir != gen_dir:
