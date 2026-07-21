@@ -2292,27 +2292,43 @@ void CSDLMgr::GetNativeDisplayInfo( int nDisplay, uint &nWidth, uint &nHeight, u
 	SDL_DisplayMode mode;
 
 #if defined( IOS )
-	// SDL reports this in points; the EGL/Metal surface is native pixels. Using
-	// points makes the engine render into a corner of the real surface.
+	// The engine's viewport must match the framebuffer it actually renders into,
+	// which is the ANGLE window surface. SDL reports points here (1/3 of native
+	// on a 3x screen) and UIScreen reports native pixels; neither is guaranteed
+	// to be the surface. Ask EGL, and only fall back if it is not up yet.
 	{
 		int pw = 0, ph = 0;
 		IOS_GetScreenPixelSize( &pw, &ph );
-		if ( pw > 0 && ph > 0 )
+
+		int ew = 0, eh = 0;
+	#ifdef ANGLE
+		if ( surface != EGL_NO_SURFACE )
+		{
+			eglQuerySurface( native_display, surface, EGL_WIDTH, &ew );
+			eglQuerySurface( native_display, surface, EGL_HEIGHT, &eh );
+		}
+	#endif
+
+		static bool s_bLogged = false;
+		if ( !s_bLogged )
+		{
+			s_bLogged = true;
+			int sw = 0, sh = 0;
+			SDL_GetWindowSize( m_Window, &sw, &sh );
+			int dw = 0, dh = 0;
+			SDL_GL_GetDrawableSize( m_Window, &dw, &dh );
+			Msg( "DIAG: display sizes -- eglsurface=%dx%d native=%dx%d SDLwindow=%dx%d SDLdrawable=%dx%d\n",
+				ew, eh, pw, ph, sw, sh, dw, dh );
+		}
+
+		// Prefer the real surface; fall back to native pixels.
+		if ( ew <= 0 || eh <= 0 ) { ew = pw; eh = ph; }
+
+		if ( ew > 0 && eh > 0 )
 		{
 			nRefreshHz = 60;
-			nWidth  = (uint)pw;
-			nHeight = (uint)ph;
-			static bool s_bLogged = false;
-			if ( !s_bLogged )
-			{
-				s_bLogged = true;
-				int sw = 0, sh = 0;
-				SDL_GetWindowSize( m_Window, &sw, &sh );
-				int dw = 0, dh = 0;
-				SDL_GL_GetDrawableSize( m_Window, &dw, &dh );
-				Msg( "DIAG: GetNativeDisplayInfo native=%dx%d px (SDL window=%dx%d drawable=%dx%d)\n",
-					pw, ph, sw, sh, dw, dh );
-			}
+			nWidth  = (uint)ew;
+			nHeight = (uint)eh;
 			return;
 		}
 	}
@@ -2368,9 +2384,17 @@ void CSDLMgr::DisplayedSize( uint &width, uint &height )
 
 	int w = 0, h = 0;
 #if defined( IOS )
-	// Must match GetNativeDisplayInfo: the backbuffer is the native-pixel
-	// EGL/Metal surface, not SDL's point-sized report.
-	IOS_GetScreenPixelSize( &w, &h );
+	// Must match GetNativeDisplayInfo: the backbuffer is the ANGLE window
+	// surface, not SDL's point-sized report.
+	#ifdef ANGLE
+	if ( surface != EGL_NO_SURFACE )
+	{
+		eglQuerySurface( native_display, surface, EGL_WIDTH, &w );
+		eglQuerySurface( native_display, surface, EGL_HEIGHT, &h );
+	}
+	#endif
+	if ( w <= 0 || h <= 0 )
+		IOS_GetScreenPixelSize( &w, &h );
 #endif
 	if ( w <= 0 || h <= 0 )
 		SDL_GL_GetDrawableSize(m_Window, &w, &h);

@@ -43,7 +43,15 @@ GLMRendererInfo::GLMRendererInfo( GLMRendererInfoFields *info )
 	// booleans
 	//-------------------------------------------------------------------
 	// gamma writes.
-	m_info.m_hasGammaWrites = true;
+	//
+	// FALSE on ES/ANGLE. This claims glEnable(GL_FRAMEBUFFER_SRGB) works, but
+	// that is desktop-GL only -- on ES the framebuffer's own format decides sRGB
+	// and ours is plain RGBA8. Claiming true meant the engine took the hardware
+	// sRGB path (a no-op here) AND suppressed the fake-sRGB shader suffix, so
+	// nothing ever gamma-encoded and everything rendered too dark. With this
+	// false the shaders carry the sRGB-encode suffix and the flSRGBWrite uniform
+	// is driven per-draw in GLMContext::FlushDrawStates.
+	m_info.m_hasGammaWrites = false;
 	
 	
 	// extension string *could* be checked, but on 10.6.3 the ext string is not there, but the func *is*
