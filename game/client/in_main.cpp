@@ -9,6 +9,8 @@
 
 
 #include "cbase.h"
+#include "tier2/tier2.h"
+#include "inputsystem/iinputsystem.h"
 #include "kbutton.h"
 #include "usercmd.h"
 #include "in_buttons.h"
@@ -306,6 +308,17 @@ void CInput::AddKeyButton( const char *name, kbutton_t *pkb )
 
 //-----------------------------------------------------------------------------
 // Purpose: 
+//-----------------------------------------------------------------------------
+// Purpose: Reports whether a Steam Controller is currently driving input.
+//			Delegates to the input system, which returns false on platforms
+//			with no Steam Controller support (iOS included).
+//-----------------------------------------------------------------------------
+bool CInput::IsSteamControllerActive()
+{
+	return g_pInputSystem ? g_pInputSystem->IsSteamControllerActive() : false;
+}
+
+
 //-----------------------------------------------------------------------------
 CInput::CInput( void )
 {

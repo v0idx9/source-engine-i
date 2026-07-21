@@ -688,6 +688,7 @@ public:
 
 	virtual bool					IsVisibleToTargetID( void ) const { return false; }
 	virtual bool					IsHealthBarVisible( void ) const { return false; }
+	virtual float					GetHealthBarHeightOffset() const { return 0.f; }
 	virtual void					ClientAdjustStartSoundParams( struct EmitSound_t &params ) {}
 	virtual void					ClientAdjustStartSoundParams( struct StartSoundParams_t &params ) {}
 

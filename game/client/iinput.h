@@ -111,6 +111,10 @@ public:
 	virtual void		CAM_CameraThirdThink( void ) = 0;
 
 	virtual	bool		EnableJoystickMode() = 0;
+	// True when a Steam Controller is driving input; the HUD uses this to
+	// pick between mouse and controller weapon-selection behaviour.
+	virtual bool		IsSteamControllerActive() = 0;
+
 };
 
 extern ::IInput *input;

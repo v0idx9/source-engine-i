@@ -270,6 +270,8 @@ private:
 #if defined( HL2_CLIENT_DLL )
 	CUtlVector< CEntityGroundContact > m_EntityGroundContact;
 #endif
+	virtual bool IsSteamControllerActive();
+
 };
 
 extern kbutton_t in_strafe;
