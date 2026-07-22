@@ -89,6 +89,18 @@ enum {
 	WINREASON_TIMELIMIT,
 	WINREASON_WINLIMIT,
 	WINREASON_WINDIFFLIMIT,
+	// TF2 game modes the base rules predate. Appended rather than inserted so
+	// the existing reasons keep their values - the reason travels in the
+	// teamplay_round_win event, and nothing indexes a parallel table by it, so
+	// only the switch statements in the win panel consume these.
+	WINREASON_RD_REACTOR_CAPTURED,
+	WINREASON_RD_CORES_COLLECTED,
+	WINREASON_RD_REACTOR_RETURNED,
+	WINREASON_PD_POINTS,
+	WINREASON_SCORED,
+	WINREASON_STOPWATCH_WATCHING_ROUNDS,
+	WINREASON_STOPWATCH_WATCHING_FINAL_ROUND,
+	WINREASON_STOPWATCH_PLAYING_ROUNDS,
 };
 
 enum stalemate_reasons_t
