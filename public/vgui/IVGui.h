@@ -102,6 +102,13 @@ public:
 
 	// add a tick signal like above, but to the head of the list of tick signals
 	virtual void AddTickSignalToHead( VPANEL panel, int intervalMilliseconds = 0 ) = 0;
+
+	// TF2's UI passes this to UIConVarRef so the UI layer can resolve convars
+	// through the VGUI engine. In this fork the client links against the
+	// convar system directly, so there is nothing to hand back and
+	// UIConVarRef ignores the value.
+	virtual void *GetVGUIEngine() { return NULL; }
+
 };
 
 #define VGUI_IVGUI_INTERFACE_VERSION "VGUI_ivgui008"

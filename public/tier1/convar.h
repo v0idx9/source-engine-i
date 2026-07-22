@@ -537,6 +537,9 @@ class UIConVarRef : public ConVarRef
 {
 public:
 	UIConVarRef( const char *pName, bool bIgnoreMissing = true ) : ConVarRef( pName, bIgnoreMissing ) {}
+	// TF2 spells this form with the VGUI engine first; the convar is resolved
+	// by name here, so the pointer is unused.
+	UIConVarRef( void *, const char *pName ) : ConVarRef( pName, true ) {}
 };
 
 
