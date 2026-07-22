@@ -91,6 +91,7 @@ projects={
 		'vpklib',
 		'vstdlib',
 		'vtf',
+		'lua',
 		'utils/vtex',
 		'unicode',
 		'video',
@@ -145,6 +146,7 @@ projects={
 		'vpklib',
 		'vstdlib',
 		'vtf',
+		'lua',
 		'stub_steam'
 	]
 }
