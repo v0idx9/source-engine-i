@@ -40,11 +40,17 @@ def build(bld):
 		'game_controls',
 		'../../common',
 		'../../public',
+		'../../public/lua',
 		'../../public/tier0',
 		'../../public/tier1',
 		'../../vgui2/include',
 		'../../vgui2/controls',
-		'../shared'
+		'../shared',
+		# lua/etc holds lua.hpp, lua/src the C headers; ../shared/lua the
+		# shared bindings. Needed by the hl2sbpp game, harmless otherwise.
+		'../../lua/src',
+		'../../lua/etc',
+		'../shared/lua'
 	]
 
 	libs = [
@@ -63,7 +69,8 @@ def build(bld):
 		'bitmap',
 		'vtf',
 		'RT',
-		'ZLIB'
+		'ZLIB',
+		'lua'
 	]
 
 	install_path = bld.env.PREFIX
