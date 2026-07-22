@@ -1097,6 +1097,74 @@ void CTempEnts::BreakModel( const Vector &pos, const QAngle &angles, const Vecto
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Create a clientside physics prop from a model pointer, returning it
+//			so the caller can keep working with it. Ported from the Source SDK
+//			2013 version; the modelindex form above is left as it was so the
+//			other games' behaviour is unchanged.
+//-----------------------------------------------------------------------------
+C_PhysPropClientside *CTempEnts::PhysicsProp( const model_t *model, int skin, const Vector& pos, const QAngle &angles, const Vector& vel, int physFlags, int physEffects, int nModelIndex )
+{
+	C_PhysPropClientside *pEntity = C_PhysPropClientside::CreateNew();
+
+	if ( !pEntity )
+		return NULL;
+
+	if ( !model )
+		return NULL;
+
+	pEntity->SetModelName( modelinfo->GetModelName( model ) );
+	pEntity->m_nSkin = skin;
+	pEntity->SetAbsOrigin( pos );
+	pEntity->SetAbsAngles( angles );
+	pEntity->SetPhysicsMode( PHYSICS_MULTIPLAYER_CLIENTSIDE );
+	pEntity->SetEffects( physEffects );
+
+	if ( physFlags & 1 )
+	{
+		if ( nModelIndex >= 0 )
+			pEntity->SetModelIndex( nModelIndex );
+
+		// Initialize() is not called on this path, so the values it would have
+		// set have to be filled in by hand.
+		pEntity->SetCollisionGroup( COLLISION_GROUP_PUSHAWAY );
+		pEntity->SetAbsVelocity( vel );
+		const model_t *mod = pEntity->GetModel();
+		if ( mod )
+		{
+			Vector mins, maxs;
+			modelinfo->GetModelBounds( mod, mins, maxs );
+			pEntity->SetCollisionBounds( mins, maxs );
+		}
+
+		pEntity->Spawn();
+		pEntity->SetHealth( 0 );
+		pEntity->Break();
+		return pEntity;
+	}
+
+	if ( !pEntity->Initialize() )
+	{
+		pEntity->Release();
+		return NULL;
+	}
+
+	IPhysicsObject *pPhysicsObject = pEntity->VPhysicsGetObject();
+
+	if ( pPhysicsObject )
+	{
+		pPhysicsObject->AddVelocity( &vel, NULL );
+	}
+	else
+	{
+		// failed to create a physics object
+		pEntity->Release();
+		return NULL;
+	}
+
+	return pEntity;
+}
+
 void CTempEnts::PhysicsProp( int modelindex, int skin, const Vector& pos, const QAngle &angles, const Vector& vel, int flags, int effects )
 {
 	C_PhysPropClientside *pEntity = C_PhysPropClientside::CreateNew();
