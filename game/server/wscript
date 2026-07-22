@@ -62,7 +62,7 @@ def build(bld):
 
 	defines = []
 
-	libs = ['tier0','particles','dmxloader','tier1','tier2','tier3','mathlib','vstdlib','choreoobjects','steam_api','lua','curl']
+	libs = ['tier0','particles','dmxloader','tier1','tier2','tier3','mathlib','vstdlib','choreoobjects','steam_api','lua','CURL']
 	if bld.env.DEST_OS == 'android' or bld.env.DEST_OS == 'linux':
 		libs += ['SSL', 'CRYPTO']
 	elif bld.env.DEST_OS == 'win32':
