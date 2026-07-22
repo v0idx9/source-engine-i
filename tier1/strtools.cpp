@@ -229,6 +229,33 @@ char *V_strupr( char *start )
 	return start;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Upper-cases the first character of each word. The remaining
+//			characters are left alone so that acronyms are not mangled.
+//-----------------------------------------------------------------------------
+void V_strtitlecase( char *pch )
+{
+	if ( !pch )
+		return;
+
+	bool bWordStart = true;
+	for ( char *p = pch; *p; ++p )
+	{
+		if ( V_isspace( *p ) || *p == '-' || *p == '_' )
+		{
+			bWordStart = true;
+		}
+		else
+		{
+			if ( bWordStart )
+			{
+				*p = toupper( (unsigned char)*p );
+			}
+			bWordStart = false;
+		}
+	}
+}
+
 char *V_strlower( char *start )
 {
 	unsigned char *str = (unsigned char*)start;

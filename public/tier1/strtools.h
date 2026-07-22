@@ -57,6 +57,9 @@ wchar_t*	_V_wcsupr (const char* file, int line, wchar_t *start);
 // ASCII-optimized functions which fall back to CRT only when necessary
 char *V_strupr( char *start );
 char *V_strlower( char *start );
+// Upper-cases the first character of each word, leaving the rest of each word
+// untouched so acronyms survive.
+void V_strtitlecase( char *pch );
 int V_stricmp( const char *s1, const char *s2 );
 int	V_strncmp( const char *s1, const char *s2, int count );
 int V_strnicmp( const char *s1, const char *s2, int n );

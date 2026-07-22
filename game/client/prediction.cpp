@@ -611,6 +611,7 @@ void CPrediction::SetupMove( C_BasePlayer *player, CUserCmd *ucmd, IMoveHelper *
 	move->SetAbsOrigin( player->GetNetworkOrigin() );
 	move->m_vecOldAngles	= move->m_vecAngles;
 	move->m_nOldButtons		= player->m_Local.m_nOldButtons;
+	move->m_flOldForwardMove = player->m_Local.m_flOldForwardMove;
 	move->m_flClientMaxSpeed = player->m_flMaxspeed;
 
 	move->m_vecAngles		= ucmd->viewangles;

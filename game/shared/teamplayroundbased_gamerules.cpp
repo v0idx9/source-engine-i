@@ -3479,6 +3479,41 @@ void CTeamplayRoundBasedRules::GetMvMPotentialDefendersLobbyPlayerInfo( CUtlVect
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Purpose: The round timer the HUD is currently showing, if any.
+//-----------------------------------------------------------------------------
+CTeamRoundTimer *CTeamplayRoundBasedRules::GetActiveRoundTimer( void )
+{
+#if defined( TF_DLL ) || defined( TF_CLIENT_DLL )
+#ifdef GAME_DLL
+	// The server-side objective resource spells this accessor differently.
+	int iTimerEntIndex = ObjectiveResource() ? ObjectiveResource()->GetTimerInHUD() : 0;
+	return dynamic_cast< CTeamRoundTimer * >( UTIL_EntityByIndex( iTimerEntIndex ) );
+#else
+	int iTimerEntIndex = ObjectiveResource() ? ObjectiveResource()->GetTimerToShowInHUD() : 0;
+	return dynamic_cast< CTeamRoundTimer * >( ClientEntityList().GetEnt( iTimerEntIndex ) );
+#endif
+#else
+	return NULL;
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CTeamplayRoundBasedRules::FireGameEvent( IGameEvent *event )
+{
+#ifdef GAME_DLL
+	const char *eventName = event->GetName();
+	if ( g_fGameOver && !Q_strcmp( eventName, "server_changelevel_failed" ) )
+	{
+		Warning( "In gameover, but failed to load the next map. Trying next map in cycle.\n" );
+		nextlevel.SetValue( "" );
+		ChangeLevel();
+	}
+#endif
+}
+
 void CTeamplayRoundBasedRules::GetAllPlayersLobbyInfo( CUtlVector<LobbyPlayerInfo_t> &vecPlayers, bool bIncludeBots )
 {
 	vecPlayers.RemoveAll();
