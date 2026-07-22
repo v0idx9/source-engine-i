@@ -2471,3 +2471,21 @@ void CreateSwoop( int nX, int nY, int nWide, int nTall, float flDelay, bool bDow
 	pSwoop->MakeReadyForUse();
 	pSwoop->SetBounds( nX, nY, nWide, nTall );
 }
+
+//-----------------------------------------------------------------------------
+// Purpose: Look up a named colour from the default (client) scheme. See the
+//			comment on the declaration in tf_controls.h.
+//-----------------------------------------------------------------------------
+Color GetColor( const char *pszColorName )
+{
+	const Color colorFallback( 255, 255, 255, 255 );
+
+	if ( !pszColorName || !scheme() )
+		return colorFallback;
+
+	vgui::IScheme *pScheme = scheme()->GetIScheme( scheme()->GetDefaultScheme() );
+	if ( !pScheme )
+		return colorFallback;
+
+	return pScheme->GetColor( pszColorName, colorFallback );
+}

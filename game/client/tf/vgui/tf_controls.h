@@ -496,4 +496,17 @@ public:
 private:
 	wchar_t m_wszBuff[ 1024 ];
 };
+
+//-----------------------------------------------------------------------------
+// Purpose: Look up a named colour from the client scheme.
+//
+//			Shorthand for the scheme()->GetIScheme( GetScheme() )->GetColor()
+//			dance that the TF panels do by hand elsewhere. Resolves against the
+//			default scheme, which is ClientScheme for the client DLL - every
+//			name passed to this (TanLight, StoreGreen, QuestMap_ActiveOrange,
+//			and so on) lives in ClientScheme.res. A panel on some other scheme
+//			would resolve against the wrong one, but none of the callers are.
+//-----------------------------------------------------------------------------
+Color GetColor( const char *pszColorName );
+
 #endif // TF_CONTROLS_H
