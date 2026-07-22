@@ -15,6 +15,7 @@
 #include "utlvector.h"
 #include "networkvar.h"
 #include "engine/IEngineTrace.h"
+#include "steam/steamuniverse.h"
 #include "engine/IStaticPropMgr.h"
 #include "shared_classnames.h"
 

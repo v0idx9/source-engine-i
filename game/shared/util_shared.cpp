@@ -17,6 +17,12 @@
 #include "cdll_util.h"
 #endif
 #include "particle_parse.h"
+#include "steam/steam_api.h"
+#ifdef CLIENT_DLL
+#include "cdll_client_int.h"
+#else
+#include "enginecallback.h"
+#endif
 #include "KeyValues.h"
 #include "time.h"
 
