@@ -49,6 +49,12 @@ public:
 	/// created if it doesn't not currently exist.
 	CGCClientSharedObjectCache *FindSOCache( const CSteamID & steamID, bool bCreateIfMissing = true );
 
+	/// Populate a shared object cache from a serialized CMsgSOCacheSubscribed that
+	/// arrived by some route other than the GC connection - the WebAPI inventory
+	/// fetch uses this. Creates the cache if it doesn't exist yet. Returns NULL if
+	/// the buffer doesn't parse or the Steam ID is invalid.
+	CGCClientSharedObjectCache *AddLocalSOCache( const CSteamID & steamID, const void *pvMsgSubscription, int cubMsgSubscription );
+
 	/// Adds a listener to the shared object cache for the specified Steam ID.
 	///
 	/// @see CGCClientSharedObjectCache::AddListener

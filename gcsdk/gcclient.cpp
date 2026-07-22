@@ -310,6 +310,30 @@ CGCClientSharedObjectCache *CGCClient::FindSOCache( const CSteamID & steamID, bo
 }
 
 //------------------------------------------------------------------------------
+// Purpose: Populate a SO cache from a serialized CMsgSOCacheSubscribed that did
+//			not come in over the GC connection. Does the same work as
+//			CGCSOCacheSubscribedJob below, minus the net packet.
+//------------------------------------------------------------------------------
+CGCClientSharedObjectCache *CGCClient::AddLocalSOCache( const CSteamID & steamID, const void *pvMsgSubscription, int cubMsgSubscription )
+{
+	CMsgSOCacheSubscribed msgSubscribed;
+	if ( !msgSubscribed.ParseFromArray( pvMsgSubscription, cubMsgSubscription ) )
+		return NULL;
+
+	CGCClientSharedObjectCache *pSOCache = FindSOCache( steamID, true );
+	if ( !pSOCache )
+		return NULL;
+
+	if ( !pSOCache->BParseCacheSubscribedMsg( msgSubscribed ) )
+		return NULL;
+
+	Test_CacheSubscribed( pSOCache->GetOwner() );
+
+	return pSOCache;
+}
+
+
+//------------------------------------------------------------------------------
 // Purpose: Add a listener to the SO cache, creating it if necessary
 //------------------------------------------------------------------------------
 void CGCClient::AddSOCacheListener( const CSteamID &ownerID, ISharedObjectListener *pListener )

@@ -365,15 +365,16 @@ struct GetAuthSessionTicketResponse_t
 // callback for GetAuthTicketForWebApi. Added in Steamworks SDK 1.57; this
 // bundled SDK predates it, and TF2's GC client references the type.
 //-----------------------------------------------------------------------------
-static const int k_nMaxTicketSizeForWebApi = 2560;
-
 struct GetTicketForWebApiResponse_t
 {
 	enum { k_iCallback = k_iSteamUserCallbacks + 68 };
 	HAuthTicket m_hAuthTicket;
 	EResult m_eResult;
 	int m_cubTicket;
-	uint8 m_rgubTicket[k_nMaxTicketSizeForWebApi];
+	// A member rather than a file-scope constant because callers reach it
+	// through the struct: pInfo->k_nCubTicketMaxLength.
+	static const int k_nCubTicketMaxLength = 2560;
+	uint8 m_rgubTicket[k_nCubTicketMaxLength];
 };
 
 
