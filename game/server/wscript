@@ -53,6 +53,8 @@ def build(bld):
 		'../../public/tier1',
 		'../../public',
 		'../../public/lua',
+		'../../public/mathlib',
+		'../../public/vphysics',
 		# lua/etc holds lua.hpp, lua/src the C headers; ../shared/lua the
 		# shared bindings. Needed by the hl2sbpp game, harmless otherwise.
 		'../../lua/src',
@@ -62,7 +64,7 @@ def build(bld):
 
 	defines = []
 
-	libs = ['tier0','particles','dmxloader','tier1','tier2','tier3','mathlib','vstdlib','choreoobjects','steam_api','lua']
+	libs = ['tier0','particles','dmxloader','tier1','tier2','tier3','mathlib','vstdlib','choreoobjects','steam_api','lua','curl']
 	if bld.env.DEST_OS == 'win32':
 		libs += ['USER32']
 
