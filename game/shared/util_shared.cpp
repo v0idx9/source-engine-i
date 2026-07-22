@@ -1189,6 +1189,95 @@ const char* UTIL_GetActiveHolidayString()
 //-----------------------------------------------------------------------------
 extern ISoundEmitterSystemBase *soundemitterbase;
 
+CSteamID UTIL_SteamIDFromProperString( const char *pszInput, bool bAllowSteam2 /* = true */ )
+{
+	// Formatted SteamID or SteamID64
+	{
+		CSteamID steamID;
+		bool bMatch = steamID.SetFromStringStrict( pszInput, GetUniverse() );
+		if ( bMatch && steamID.IsValid() )
+			{ return steamID; }
+	}
+
+	// Legacy SteamID?
+	const char szPrefix[] = "STEAM_";
+	if ( bAllowSteam2 && V_strlen( pszInput ) >= (int)V_ARRAYSIZE( szPrefix ) &&
+	     V_strncmp( szPrefix, pszInput, V_ARRAYSIZE( szPrefix ) - 1 ) == 0 )
+	{
+		CSteamID steamID;
+		bool bMatch = SteamIDFromSteam2String( pszInput, GetUniverse(), &steamID );
+		if ( bMatch && steamID.IsValid() )
+			{ return steamID; }
+	}
+
+	return CSteamID();
+}
+CSteamID UTIL_GuessSteamIDFromFuzzyInput( const char *pszInputRaw, bool bCurrentUniverse /* = true */ )
+{
+	if( !pszInputRaw )
+	{
+		return CSteamID();
+	}
+
+	EUniverse localUniverse = GetUniverse();
+
+	CUtlString strInput( pszInputRaw );
+	strInput.Trim();
+
+	// Is this a proper string once trimmed?
+	CSteamID steamID = UTIL_SteamIDFromProperString( strInput, true );
+	if ( steamID.IsValid() && ( !bCurrentUniverse || steamID.GetEUniverse() == localUniverse ) )
+		{ return steamID; }
+
+	// Check for all digits representing a 32bit number
+	//
+	// SteamIDFromProperString would've checked for a 64bit staemID, but if it is 32bit we can assume account ID for
+	// current universe
+	bool bAllDigits = true;
+	for ( int i = 0; bAllDigits && i < strInput.Length(); i++ )
+		{ bAllDigits = bAllDigits && V_isdigit( strInput[i] ); }
+
+	if ( bAllDigits )
+	{
+		uint64_t ullParsed = V_atoi64( strInput );
+		if ( ullParsed > 0 && ullParsed < UINT32_MAX ) // 0 and ~0 are bogus accountID values
+		{
+			CSteamID steamID( (uint32_t)ullParsed, localUniverse, k_EAccountTypeIndividual );
+			if ( steamID.IsValid() )
+				{ return steamID; }
+		}
+	}
+
+	// See if it's a profile link. If it is, clip the SteamID from it.
+	if ( V_strncmp( strInput, "http://", 7 ) == 0 )
+		{ strInput = strInput.Slice( 0, 7 ); }
+	if ( V_strncmp( strInput, "https://", 8 ) == 0 )
+		{ strInput = strInput.Slice( 0, 8 ); }
+	if ( V_strncmp( strInput, "www.", 4 ) == 0 )
+		{ strInput = strInput.Slice( 0, 4 ); }
+
+	const char pszProfilePrepend[] = "steamcommunity.com/profiles/";
+	const size_t lenProfilePrepend = V_ARRAYSIZE( pszProfilePrepend ) - 1;
+	if ( strInput.Length() > (int)lenProfilePrepend &&
+	     V_strncmp( pszProfilePrepend, strInput, lenProfilePrepend ) == 0 )
+	{
+		// Read up to ? or # or /
+		const char *pEnd = strchr( strInput + lenProfilePrepend, '?' );
+		const char *pPound = strchr( strInput + lenProfilePrepend, '#' );
+		if ( pPound < pEnd ) { pEnd = pPound; }
+		const char *pSlash = strchr( strInput + lenProfilePrepend, '/' );
+		if ( pSlash < pEnd ) { pEnd = pSlash; }
+
+		strInput = strInput.Slice( lenProfilePrepend, pEnd ? ( pEnd - strInput.Get() ) : strInput.Length() );
+
+		// /profiles/[U:1:2] *does* work, but STEAM_BLAH does not
+		CSteamID steamID = UTIL_SteamIDFromProperString( strInput.Get(), /* bAllowSteam2 */ false );
+		if ( steamID.IsValid() && ( !bCurrentUniverse || steamID.GetEUniverse() == localUniverse ) )
+			{ return steamID; }
+	}
+
+	return CSteamID();
+}
 CSteamID SteamIDFromDecimalString( const char *pszUint64InDecimal )
 {
 	uint64 ulSteamID = 0;

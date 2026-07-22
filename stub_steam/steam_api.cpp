@@ -158,6 +158,10 @@ S_API void *SteamTimeline() {
 	return NULL;
 }
 
+S_API void *SteamNetworkingUtils() {
+	return NULL;
+}
+
 S_API void *SteamUserStats() {
 	return NULL;
 }

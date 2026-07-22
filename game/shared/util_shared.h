@@ -612,6 +612,8 @@ float LerpFloat( float x0, float x1, float t );
 Color LerpColor( const Color &c0, const Color &c1, float t );
 
 CSteamID SteamIDFromDecimalString( const char *pszUint64InDecimal );
+CSteamID UTIL_SteamIDFromProperString( const char *pszInputRaw, bool bAllowSteam2 = true );
+CSteamID UTIL_GuessSteamIDFromFuzzyInput( const char *pszInputRaw, bool bCurrentUniverseOnly = true );
 
 //--------------------------------------------------------------------------------------------------------------
 // You can use this if you need an autolist without an extra interface type involved.
