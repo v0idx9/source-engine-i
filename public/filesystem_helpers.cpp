@@ -36,11 +36,6 @@ const char* ParseFileInternal( const char* pFileBytes, char* pTokenOut, bool* pW
 	if (!pFileBytes)
 		return 0;
 
-#ifdef MOON
-	if ( nMaxTokenLen <= 1 )
-		return 0;
-#endif // MOON
-
 	InitializeCharacterSets();
 
 	// YWB:  Ignore colons as token separators in COM_Parse
@@ -105,19 +100,7 @@ skipwhite:
 				return pFileBytes;
 			}
 			pTokenOut[len] = c;
-#ifndef MOON
 			len += ( len < nMaxTokenLen-1 ) ? 1 : 0;
-#else
-			len++;
-
-			// Ensure buffer length is not overrunning!
-			if ( len == nMaxTokenLen - 1 )
-			{
-				pTokenOut[len] = 0;
-				Assert( 0 );
-				return pFileBytes;
-			}
-#endif // MOON
 		}
 	}
 
@@ -135,19 +118,7 @@ skipwhite:
 	{
 		pTokenOut[len] = c;
 		pFileBytes++;
-#ifndef MOON
 		len += ( len < nMaxTokenLen-1 ) ? 1 : 0;
-#else
-		len++;
-
-		// Ensure buffer length is not overrunning!
-		if ( len == nMaxTokenLen - 1 )
-		{
-			pTokenOut[ len ] = 0;
-			Assert( 0 );
-			return pFileBytes;
-		}
-#endif
 		c = *pFileBytes;
 		if ( IN_CHARACTERSET( breaks, c ) )
 			break;

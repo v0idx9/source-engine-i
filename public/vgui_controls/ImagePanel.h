@@ -77,9 +77,7 @@ private:
 	char *m_pszDrawColorName;
 	bool m_bPositionImage;
 	bool m_bCenterImage;
-#ifndef MOON
 	bool m_bScaleImage;
-#endif
 	bool m_bTileImage;
 	bool m_bTileHorizontally;
 	bool m_bTileVertically;
@@ -87,10 +85,6 @@ private:
 	Color m_FillColor;
 	Color m_DrawColor;
 	int m_iRotation;
-#ifdef MOON
-public:
-	bool m_bScaleImage;
-#endif
 };
 
 } // namespace vgui

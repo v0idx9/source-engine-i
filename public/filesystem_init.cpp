@@ -307,7 +307,7 @@ static bool Sys_GetExecutableName( char *out, int len )
 
 bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
 {
-#ifdef ANDROID
+#if ANDROID || IOS
 	Q_snprintf( exedir, exeDirLen, "%s", getenv("APP_LIB_PATH") );
 #else
 	exedir[0] = 0;
@@ -363,7 +363,7 @@ bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
 
 static bool FileSystem_GetBaseDir( char *baseDir, int baseDirLen )
 {
-#ifdef ANDROID
+#if ANDROID || IOS
 	strncpy(baseDir, getenv("VALVE_GAME_PATH"), baseDirLen);
 	return true;
 #else
@@ -581,20 +581,6 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 		}
 	}
 
-#ifdef MOON
-    const char *ExtraGmaPaths = getenv( "EXTRAS_GMA_PATH" );
-    if( ExtraGmaPaths )
-    {
-        CUtlStringList vecPaths;
-        V_SplitString( ExtraGmaPaths, ",", vecPaths );
-        FOR_EACH_VEC( vecPaths, idxExtraPath )
-        {
-            FileSystem_AddLoadedSearchPath( initInfo, "PLATFORM", vecPaths[idxExtraPath], false );
-            FileSystem_AddLoadedSearchPath( initInfo, "GAME", vecPaths[idxExtraPath], false );
-        }
-    }
-#endif
-
 	const char *ExtraVpkPaths = getenv( "EXTRAS_VPK_PATH" );
 	char szAbsSearchPath[MAX_PATH];
 
@@ -661,13 +647,7 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 				{
 
 					// We only know how to mount VPK's and directories
-					if ( pszFoundShortName[0] != '.' && 
-											( initInfo.m_pFileSystem->FindIsDirectory( findHandle ) || 
-											V_stristr( pszFoundShortName, ".vpk" )
-#ifdef MOON
-											|| V_stristr( pszFoundShortName, ".gma" )
-#endif
-										) ) 
+					if ( pszFoundShortName[0] != '.' && ( initInfo.m_pFileSystem->FindIsDirectory( findHandle ) || V_stristr( pszFoundShortName, ".vpk" ) ) )
 					{
 						char szAbsName[MAX_PATH];
 						V_ExtractFilePath( szAbsSearchPath, szAbsName, sizeof( szAbsName ) );

@@ -17,7 +17,7 @@
 #elif defined( POSIX )
 #include <stdio.h>
 #include <sys/stat.h>
-#ifdef OSX
+#ifdef APPLE
 #include <copyfile.h>
 #endif
 #endif
@@ -65,7 +65,7 @@ extern void longjmp( jmp_buf, int ) __attribute__((noreturn));
 #define JPEGLIB_USE_STDIO
 #if ANDROID
 #include "android/jpeglib/jpeglib.h"
-#elif defined WIN32
+#elif defined WIN32 || defined IOS
 #include "jpeglib/jpeglib.h"
 #else
 #include <jpeglib.h>
@@ -76,7 +76,7 @@ extern void longjmp( jmp_buf, int ) __attribute__((noreturn));
 
 #if HAVE_PNG
 
-#if ANDROID || WIN32
+#if ANDROID || WIN32 || IOS
 #include "libpng/png.h"
 #else
 #include <png.h>
@@ -91,7 +91,7 @@ extern void longjmp( jmp_buf, int ) __attribute__((noreturn));
 #ifdef WIN32
 #include <io.h>
 #endif
-#ifdef OSX
+#ifdef APPLE
 #include <copyfile.h>
 #endif
 
@@ -1552,7 +1552,7 @@ static void DoCopyFile( const char *source, const char *destination )
 {
 #if defined( WIN32 )
 	CopyFile( source, destination, true );
-#elif defined( OSX )
+#elif defined( APPLE )
 	copyfile( source, destination, NULL, COPYFILE_ALL );
 #elif defined( ENGINE_DLL )
 	::COM_CopyFile( source, destination );

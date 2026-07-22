@@ -1798,14 +1798,6 @@ void CStudioHdr::CActivityToSequenceMapping::Reinitialize( CStudioHdr *pstudiohd
 // is specially implemented.
 const CStudioHdr::CActivityToSequenceMapping::SequenceTuple *CStudioHdr::CActivityToSequenceMapping::GetSequences( int forActivity, int * __restrict outSequenceCount, int * __restrict outTotalWeight )
 {
-    if ( forActivity < 0 || forActivity >= -1 )
-    {
-        DevMsg("Warning: Invalid activity ID %d in GetSequences\n", forActivity);
-        *outSequenceCount = 0;
-        *outTotalWeight = 0;
-        return NULL;
-    }
-
 	// Construct a dummy entry so we can do a hash lookup (the UtlHash does not divorce keys from values)
 
 	HashValueType entry(forActivity, 0, 0, 0);
@@ -1830,28 +1822,22 @@ const CStudioHdr::CActivityToSequenceMapping::SequenceTuple *CStudioHdr::CActivi
 
 int CStudioHdr::CActivityToSequenceMapping::NumSequencesForActivity( int forActivity )
 {
-    // If this trips, you've called this function on something that doesn't
-    // have activities.
-    //Assert(m_pSequenceTuples != NULL);
-    if ( m_pSequenceTuples == NULL )
-        return 0;
-    
-	if ( forActivity < 0 || forActivity >= 1975 ) // LAST_SHARED_ACTIVITY
+	// If this trips, you've called this function on something that doesn't 
+	// have activities.
+	//Assert(m_pSequenceTuples != NULL);
+	if ( m_pSequenceTuples == NULL )
+		return 0;
+
+	HashValueType entry(forActivity, 0, 0, 0);
+	UtlHashHandle_t handle = m_ActToSeqHash.Find(entry);
+	if (m_ActToSeqHash.IsValidHandle(handle))
 	{
-		DevMsg("Warning: Invalid activity ID %d in NumSequencesForActivity\n", forActivity);
+		return m_ActToSeqHash[handle].count;
+	}
+	else
+	{
 		return 0;
 	}
-    
-    HashValueType entry(forActivity, 0, 0, 0);
-    UtlHashHandle_t handle = m_ActToSeqHash.Find(entry);
-    if (m_ActToSeqHash.IsValidHandle(handle))
-    {
-        return m_ActToSeqHash[handle].count;
-    }
-    else
-    {
-        return 0;
-    }
 }
 
 // double-check that the data I point to hasn't changed
