@@ -25,6 +25,8 @@ public:
 protected:
 	// base classes should implement these
 	virtual void OnBind( C_BaseEntity *pBaseEntity ) = 0;
+	// Called when the bound renderable is not an entity.
+	virtual void OnBindNotEntity( void *pRenderable ) {}
 };
 
 
