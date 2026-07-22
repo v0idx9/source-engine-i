@@ -187,6 +187,11 @@ public:
 
 	void			OutputDebugInfo() const;
 
+#ifdef MOON
+	float	GetBuoyancyRatio( void ) const override { return m_buoyancyRatio; }
+	IPhysicsEnvironment	*GetEnvironment() const override;
+#endif // MOON
+
 	// local functions
 	inline	IVP_Real_Object *GetObject( void ) const { return m_pObject; }
 	inline int		CallbackFlags( void ) const { return m_callbacks; }
@@ -201,7 +206,9 @@ public:
 
 	inline int		GetActiveIndex( void ) const { return m_activeIndex; }
 	inline void		SetActiveIndex( int index ) { m_activeIndex = index; }
+#ifndef MOON
 	inline float	GetBuoyancyRatio( void ) const { return m_buoyancyRatio; }
+#endif
 	// returns true if the mass center is set to the default for the collision model
 	bool			IsMassCenterAtDefault() const;
 
