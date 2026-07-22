@@ -615,6 +615,18 @@ CSteamID SteamIDFromDecimalString( const char *pszUint64InDecimal );
 CSteamID UTIL_SteamIDFromProperString( const char *pszInputRaw, bool bAllowSteam2 = true );
 CSteamID UTIL_GuessSteamIDFromFuzzyInput( const char *pszInputRaw, bool bCurrentUniverseOnly = true );
 
+#ifdef CLIENT_DLL
+// Run a player name through Steam's name filter. There is no Steam client on
+// iOS and the bundled Steamworks SDK has no FilterText, so these pass the name
+// through unchanged - which is what the filter path does upstream when
+// SteamUtils() is null. The name is returned as-is rather than copied, so the
+// caller's buffer is untouched.
+char *UTIL_GetFilteredPlayerName( int iPlayerIndex, char *pszName );
+char *UTIL_GetFilteredPlayerName( const CSteamID &steamID, char *pszName );
+wchar_t *UTIL_GetFilteredPlayerNameAsWChar( int iPlayerIndex, const char *pszName, wchar_t *pwszName );
+wchar_t *UTIL_GetFilteredPlayerNameAsWChar( const CSteamID &steamID, const char *pszName, wchar_t *pwszName );
+#endif // CLIENT_DLL
+
 //--------------------------------------------------------------------------------------------------------------
 // You can use this if you need an autolist without an extra interface type involved.
 // To use this, just inherit (class Mine : public TAutoList<Mine> {)

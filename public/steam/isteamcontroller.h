@@ -208,6 +208,13 @@ public:
 	// Steamworks SDK than the one bundled here; TF2's target-ID HUD calls it.
 	virtual const char *GetStringForActionOrigin( EControllerActionOrigin eOrigin ) = 0;
 
+	// Returns the path to a glyph image for an action origin, which the caller
+	// loads as a bitmap. Also from a later SDK; TF2's controller hint icons use
+	// it. Appended rather than inserted so the existing vtable slots keep their
+	// indices - and on iOS SteamController() is null anyway, so the interface is
+	// never actually dispatched through.
+	virtual const char *GetGlyphForActionOrigin( EControllerActionOrigin eOrigin ) = 0;
+
 };
 
 #define STEAMCONTROLLER_INTERFACE_VERSION "SteamController003"

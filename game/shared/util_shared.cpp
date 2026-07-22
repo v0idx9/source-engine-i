@@ -1292,6 +1292,57 @@ CSteamID SteamIDFromDecimalString( const char *pszUint64InDecimal )
 	}
 }
 
+#ifdef CLIENT_DLL
+//-----------------------------------------------------------------------------
+// Purpose: Player name filtering.
+//
+//			Upstream hands the name to SteamUtils()->FilterText() and returns it
+//			unchanged when there is no SteamUtils(). iOS has no Steam client and
+//			the bundled Steamworks SDK predates FilterText entirely, so only the
+//			unchanged path can apply here.
+//-----------------------------------------------------------------------------
+char *UTIL_GetFilteredPlayerName( const CSteamID &steamID, char *pszName )
+{
+	// Writable so that a caller that does modify the result can't corrupt a
+	// string literal. Shared between all null-input calls, which only ever see
+	// an empty name.
+	static char s_szEmptyName[ 1 ] = { '\0' };
+	return pszName ? pszName : s_szEmptyName;
+}
+
+char *UTIL_GetFilteredPlayerName( int iPlayerIndex, char *pszName )
+{
+	CSteamID steamIDPlayer;
+	CBasePlayer *pPlayer = UTIL_PlayerByIndex( iPlayerIndex );
+	if ( pPlayer )
+	{
+		pPlayer->GetSteamID( &steamIDPlayer );
+	}
+	return UTIL_GetFilteredPlayerName( steamIDPlayer, pszName );
+}
+
+wchar_t *UTIL_GetFilteredPlayerNameAsWChar( const CSteamID &steamID, const char *pszName, wchar_t *pwszName )
+{
+	if ( !pwszName )
+		return pwszName;
+
+	V_UTF8ToUnicode( pszName ? pszName : "", pwszName, MAX_PLAYER_NAME_LENGTH * sizeof( wchar_t ) );
+	return pwszName;
+}
+
+wchar_t *UTIL_GetFilteredPlayerNameAsWChar( int iPlayerIndex, const char *pszName, wchar_t *pwszName )
+{
+	CSteamID steamIDPlayer;
+	CBasePlayer *pPlayer = UTIL_PlayerByIndex( iPlayerIndex );
+	if ( pPlayer )
+	{
+		pPlayer->GetSteamID( &steamIDPlayer );
+	}
+	return UTIL_GetFilteredPlayerNameAsWChar( steamIDPlayer, pszName, pwszName );
+}
+#endif // CLIENT_DLL
+
+
 Color FloatRGBAToColor( float r, float g, float b, float a )
 {
 	return Color(
