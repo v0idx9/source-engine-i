@@ -29,7 +29,7 @@
 #include <wchar.h>
 #endif
 #include <string.h>
-#ifdef APPLE
+#ifdef OSX
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>
@@ -51,7 +51,7 @@
 		#if !defined( DID_THE_OPERATOR_NEW )
                         #define DID_THE_OPERATOR_NEW
 			// posix doesn't have a new of this form, so we impl our own
-			#ifdef APPLE
+			#ifdef OSX
 				void* operator new( size_t nSize, int blah, const char *pFileName, int nLine ) throw (std::bad_alloc);
 				void* operator new[]( size_t nSize, int blah, const char *pFileName, int nLine ) throw (std::bad_alloc);
 			#else

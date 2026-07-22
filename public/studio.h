@@ -79,14 +79,22 @@ Studio models are position independent, so the cache manager can move them.
 #define	MAXSTUDIOFLEXVERTS	5000
 #endif
 #define MAXSTUDIOSKINS		32		// total textures
+#ifdef MOON
+#define MAXSTUDIOBONES		2048	// total bones actually used
+#else
 #define MAXSTUDIOBONES		128		// total bones actually used
+#endif
 #define MAXSTUDIOFLEXDESC	1024	// maximum number of low level flexes (actual morph targets)
 #define MAXSTUDIOFLEXCTRL	96		// maximum number of flexcontrollers (input sliders)
 #define MAXSTUDIOPOSEPARAM	24
 #define MAXSTUDIOBONECTRLS	5
 #define MAXSTUDIOANIMBLOCKS 256
 
+#ifdef MOON
+#define MAXSTUDIOBONEBITS	11		// NOTE: MUST MATCH MAXSTUDIOBONES
+#else
 #define MAXSTUDIOBONEBITS	7		// NOTE: MUST MATCH MAXSTUDIOBONES
+#endif
 
 // NOTE!!! : Changing this number also changes the vtx file format!!!!!
 #define MAX_NUM_BONES_PER_VERT 3
@@ -2769,6 +2777,10 @@ public:
 			m_ActivityToSequence.Initialize(this);
 		}
 #endif
+#ifdef MOON
+		if ( activity < 0 )
+			return -1;
+#endif
 		return m_ActivityToSequence.SelectWeightedSequence( this, activity, curSequence );
 	}
 
@@ -3298,6 +3310,14 @@ inline int Studio_LoadVertexes( const vertexFileHeader_t *pTempVvdHdr, vertexFil
 			// working bottom up, skip over copying higher detail lods
 			continue;
 		}
+
+#ifdef MOON
+		if ( ( pFixupTable[ i ].numVertexes < 0 ) || ( target + pFixupTable[ i ].numVertexes > numVertexes ) )
+		{
+			Assert( !"Malicious map attempting to write off the end of our fixup verts. Sad face." );
+			Error( "Unable to load corrupted map." );
+		}
+#endif // MOON
 
 		// copy vertexes
 

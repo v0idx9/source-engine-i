@@ -346,6 +346,19 @@ void ExtractAnimValue( int frame, mstudioanimvalue_t *panimvalue, float scale, f
 		return;
 	}
 
+#ifdef SBPP
+	if ( frame < 0 )
+	{
+		v1 = 0.0f;
+		return;
+	}
+
+	if ( !IsFinite(scale) )
+	{
+		v1 = 0.0f;
+		return;
+	}
+#endif
 	int k = frame;
 
 	while (panimvalue->num.total <= k)
@@ -2599,7 +2612,7 @@ public:
 //    e = sqrt(a2-d2)
 
    static float findD(float a, float b, float c) {
-      return (c + (a*a-b*b)/c) / 2;
+	  return (c + (a*a-b*b)/c) / 2;
    }
    static float findE(float a, float d) { return sqrt(a*a-d*d); } 
 
@@ -2613,15 +2626,15 @@ public:
    float Minv[3][3];
 
    bool solve(float A, float B, float const P[], float const D[], float Q[]) {
-      float R[3];
-      defineM(P,D);
-      rot(Minv,P,R);
+	  float R[3];
+	  defineM(P,D);
+	  rot(Minv,P,R);
 	  float r = length(R);
-      float d = findD(A,B,r);
-      float e = findE(A,d);
-      float S[3] = {d,e,0};
-      rot(Mfwd,S,Q);
-      return d > (r - B) && d < A;
+	  float d = findD(A,B,r);
+	  float e = findE(A,d);
+	  float S[3] = {d,e,0};
+	  rot(Mfwd,S,Q);
+	  return d > (r - B) && d < A;
    }
 
 // If "knee" position Q needs to be as close as possible to some point D,
@@ -2630,32 +2643,32 @@ public:
 // Given that constraint, define the forward and inverse of M as follows:
 
    void defineM(float const P[], float const D[]) {
-      float *X = Minv[0], *Y = Minv[1], *Z = Minv[2];
+	  float *X = Minv[0], *Y = Minv[1], *Z = Minv[2];
 
 // Minv defines a coordinate system whose x axis contains P, so X = unit(P).
 	  int i;
-      for (i = 0 ; i < 3 ; i++)
-         X[i] = P[i];
-      normalize(X);
+	  for (i = 0 ; i < 3 ; i++)
+		 X[i] = P[i];
+	  normalize(X);
 
-// Its y axis is perpendicular to P, so Y = unit( E - X(E·X) ).
+// Its y axis is perpendicular to P, so Y = unit( E - X(Eï¿½X) ).
 
-      float dDOTx = dot(D,X);
-      for (i = 0 ; i < 3 ; i++)
-         Y[i] = D[i] - dDOTx * X[i];
-      normalize(Y);
+	  float dDOTx = dot(D,X);
+	  for (i = 0 ; i < 3 ; i++)
+		 Y[i] = D[i] - dDOTx * X[i];
+	  normalize(Y);
 
-// Its z axis is perpendicular to both X and Y, so Z = X×Y.
+// Its z axis is perpendicular to both X and Y, so Z = Xï¿½Y.
 
-      cross(X,Y,Z);
+	  cross(X,Y,Z);
 
 // Mfwd = (Minv)T, since transposing inverts a rotation matrix.
 
-      for (i = 0 ; i < 3 ; i++) {
-         Mfwd[i][0] = Minv[0][i];
-         Mfwd[i][1] = Minv[1][i];
-         Mfwd[i][2] = Minv[2][i];
-      }
+	  for (i = 0 ; i < 3 ; i++) {
+		 Mfwd[i][0] = Minv[0][i];
+		 Mfwd[i][1] = Minv[1][i];
+		 Mfwd[i][2] = Minv[2][i];
+	  }
    }
 
 //------------ GENERAL VECTOR MATH SUPPORT -----------
@@ -2665,20 +2678,20 @@ public:
    static float length(float const v[]) { return sqrt( dot(v,v) ); }
 
    static void normalize(float v[]) {
-      float norm = length(v);
-      for (int i = 0 ; i < 3 ; i++)
-         v[i] /= norm;
+	  float norm = length(v);
+	  for (int i = 0 ; i < 3 ; i++)
+		 v[i] /= norm;
    }
 
    static void cross(float const a[], float const b[], float c[]) {
-      c[0] = a[1] * b[2] - a[2] * b[1];
-      c[1] = a[2] * b[0] - a[0] * b[2];
-      c[2] = a[0] * b[1] - a[1] * b[0];
+	  c[0] = a[1] * b[2] - a[2] * b[1];
+	  c[1] = a[2] * b[0] - a[0] * b[2];
+	  c[2] = a[0] * b[1] - a[1] * b[0];
    }
 
    static void rot(float const M[3][3], float const src[], float dst[]) {
-      for (int i = 0 ; i < 3 ; i++)
-         dst[i] = dot(M[i],src);
+	  for (int i = 0 ; i < 3 ; i++)
+		 dst[i] = dot(M[i],src);
    }
 };
 

@@ -6,7 +6,7 @@
 //
 //=============================================================================//
 #include <stdio.h>
-#ifdef APPLE
+#ifdef OSX
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>

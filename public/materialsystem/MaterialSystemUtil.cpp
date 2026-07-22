@@ -119,6 +119,9 @@ CTextureReference::CTextureReference( ) : m_pTexture(NULL)
 }
 
 CTextureReference::CTextureReference( const CTextureReference &ref )
+#ifdef MOON
+	: m_pTexture( NULL )
+#endif
 {
 	m_pTexture = ref.m_pTexture;
 	if ( m_pTexture )
@@ -129,6 +132,9 @@ CTextureReference::CTextureReference( const CTextureReference &ref )
 
 void CTextureReference::operator=( CTextureReference &ref )
 {
+#ifdef MOON
+	Shutdown();
+#endif
 	m_pTexture = ref.m_pTexture;
 	if ( m_pTexture )
 	{
@@ -204,6 +210,14 @@ void CTextureReference::Shutdown( bool bDeleteIfUnReferenced )
 {
 	if ( m_pTexture && materials )
 	{
+#ifdef MOON
+		Assert( ( (uintptr_t)m_pTexture & 7 ) == 0 );
+		if ( ( (uintptr_t)m_pTexture & 7 ) != 0 )
+		{
+			m_pTexture = NULL;
+			return;
+		}
+#endif
 		m_pTexture->DecrementReferenceCount();
 		if ( bDeleteIfUnReferenced )
 		{

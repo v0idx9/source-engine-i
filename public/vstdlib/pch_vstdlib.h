@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
-#ifdef APPLE
+#ifdef OSX
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>

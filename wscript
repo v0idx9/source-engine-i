@@ -299,6 +299,17 @@ def define_platform(conf):
 			'NDEBUG'
 		])
 
+	# SB++ marks all its own engine changes behind MOON and defines it globally
+	# in its wscript. ClientRenderHandle_t widens to unsigned int under it, and
+	# SB++'s clientleafsystem.cpp is written against that width, so the game
+	# layer taken from SB++ only type-checks with this on. CURL_STATICLIB comes
+	# from the same block.
+	if conf.options.GAMES == 'hl2sbpp':
+		conf.env.append_unique('DEFINES', [
+			'MOON',
+			'CURL_STATICLIB'
+		])
+
 	conf.define('GIT_COMMIT_HASH', conf.env.GIT_VERSION)
 
 
