@@ -989,6 +989,14 @@ struct CParticleControlPoint
 
 	// parent for hierarchies
 	int m_nParent;
+
+	// Per-control-point modulation used by TF2's flamethrower. This fork's
+	// particle operators do not read these yet, so they are stored for the
+	// game code's benefit rather than affecting simulation.
+	float m_flDensity;
+	float m_flRadius;
+	float m_flDuration;
+	Vector m_Velocity;
 };
 
 
@@ -1047,6 +1055,13 @@ public:
 	void SetControlPointUpVector( int nWhichPoint, const Vector &v );
 	void SetControlPointRightVector( int nWhichPoint, const Vector &v );
 	void SetControlPointParent( int nWhichPoint, int n );
+
+	// See CParticleControlPoint above -- stored, not yet consumed by operators.
+	void SetControlPointDensity( int nWhichPoint, float flDensity );
+	void SetControlPointRadius( int nWhichPoint, float flRadius );
+	void SetControlPointDuration( int nWhichPoint, float flDuration );
+	void SetControlPointVelocity( int nWhichPoint, const Vector &v );
+	void SetControlPointIndex( int nWhichPoint );
 
 	// get the pointer to an attribute for a given particle.  
 	// !!speed!! if you find yourself calling this anywhere that matters, 
@@ -1519,6 +1534,57 @@ inline void CParticleCollection::SetControlPoint( int nWhichPoint, const Vector 
 	for( CParticleCollection *i = m_Children.m_pHead; i; i=i->m_pNext )
 	{
 		i->SetControlPoint( nWhichPoint, v );
+	}
+}
+
+inline void CParticleCollection::SetControlPointDensity( int nWhichPoint, float flDensity )
+{
+	Assert( ( nWhichPoint >= 0) && ( nWhichPoint < MAX_PARTICLE_CONTROL_POINTS ) );
+	m_ControlPoints[ nWhichPoint ].m_flDensity = flDensity;
+	for( CParticleCollection *i = m_Children.m_pHead; i; i=i->m_pNext )
+	{
+		i->SetControlPointDensity( nWhichPoint, flDensity );
+	}
+}
+
+inline void CParticleCollection::SetControlPointRadius( int nWhichPoint, float flRadius )
+{
+	Assert( ( nWhichPoint >= 0) && ( nWhichPoint < MAX_PARTICLE_CONTROL_POINTS ) );
+	m_ControlPoints[ nWhichPoint ].m_flRadius = flRadius;
+	for( CParticleCollection *i = m_Children.m_pHead; i; i=i->m_pNext )
+	{
+		i->SetControlPointRadius( nWhichPoint, flRadius );
+	}
+}
+
+inline void CParticleCollection::SetControlPointDuration( int nWhichPoint, float flDuration )
+{
+	Assert( ( nWhichPoint >= 0) && ( nWhichPoint < MAX_PARTICLE_CONTROL_POINTS ) );
+	m_ControlPoints[ nWhichPoint ].m_flDuration = flDuration;
+	for( CParticleCollection *i = m_Children.m_pHead; i; i=i->m_pNext )
+	{
+		i->SetControlPointDuration( nWhichPoint, flDuration );
+	}
+}
+
+inline void CParticleCollection::SetControlPointVelocity( int nWhichPoint, const Vector &v )
+{
+	Assert( ( nWhichPoint >= 0) && ( nWhichPoint < MAX_PARTICLE_CONTROL_POINTS ) );
+	m_ControlPoints[ nWhichPoint ].m_Velocity = v;
+	for( CParticleCollection *i = m_Children.m_pHead; i; i=i->m_pNext )
+	{
+		i->SetControlPointVelocity( nWhichPoint, v );
+	}
+}
+
+// Marks a control point as in use without giving it a position yet.
+inline void CParticleCollection::SetControlPointIndex( int nWhichPoint )
+{
+	Assert( ( nWhichPoint >= 0) && ( nWhichPoint < MAX_PARTICLE_CONTROL_POINTS ) );
+	m_nHighestCP = MAX( m_nHighestCP, nWhichPoint );
+	for( CParticleCollection *i = m_Children.m_pHead; i; i=i->m_pNext )
+	{
+		i->SetControlPointIndex( nWhichPoint );
 	}
 }
 

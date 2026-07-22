@@ -909,6 +909,7 @@ CParticleCollection::CParticleCollection( )
 	// align all control point orientations with the global world
 	for( int i=0; i < MAX_PARTICLE_CONTROL_POINTS; i++ )
 	{
+		m_ControlPoints[i].m_flDensity = 1.0f;
 		m_ControlPoints[i].m_ForwardVector.Init( 0, 1, 0 );
 		m_ControlPoints[i].m_UpVector.Init( 0, 0, 1 );
 		m_ControlPoints[i].m_RightVector.Init( 1, 0, 0 );
