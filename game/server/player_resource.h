@@ -33,6 +33,7 @@ protected:
 	CNetworkArray( int, m_iScore, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_iDeaths, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_bConnected, MAX_PLAYERS+1 );
+	CNetworkArray( int, m_bValid, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_iTeam, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_bAlive, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_iHealth, MAX_PLAYERS+1 );
