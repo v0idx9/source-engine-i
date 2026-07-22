@@ -71,8 +71,13 @@ const char *GetPlatform()
 	return "OSX";
 #elif PLATFORM_HAIKU
 	return "Haiku";
+#elif defined( IOS ) || defined( _IOS )
+	return "iOS";
 #else
-	return "Unknown Platform"
+	// Missing semicolon upstream. Every platform SB++ targets matches an
+	// earlier branch, so this fallback is never compiled there; iOS reached it
+	// and the file would not parse.
+	return "Unknown Platform";
 #endif
 }
 
