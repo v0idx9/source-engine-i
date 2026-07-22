@@ -185,7 +185,25 @@ bool CUserMessages::DispatchUserMessage( int msg_type, bf_read &msg_data )
 #endif
 }
 
-// Singleton
-static CUserMessages g_UserMessages;
+// Singleton. Held in a function-local static so that it is constructed on
+// first use: USER_MESSAGE() hooks itself up from a static initialiser, which
+// may run before this file's own initialisers would have.
+static CUserMessages *GetUserMessagesSingleton()
+{
+	static CUserMessages s_UserMessages;
+	return &s_UserMessages;
+}
+
 // Expose to rest of .dll
-CUserMessages *usermessages = &g_UserMessages;
+CUserMessages *usermessages = GetUserMessagesSingleton();
+
+void CreateUserMessages()
+{
+	// Zero-initialised until this file's dynamic initialiser runs; a
+	// USER_MESSAGE() static initialiser that beats it lands here first and
+	// gets the same singleton, so the later assignment above is a no-op.
+	if ( !usermessages )
+	{
+		usermessages = GetUserMessagesSingleton();
+	}
+}
