@@ -478,18 +478,13 @@ void CVoteSetupDialog::OnCommand(const char *command)
 							CBasePlayer *pPlayer = UTIL_PlayerByIndex( playerIndex );
 							Q_snprintf( szVoteCommand, sizeof( szVoteCommand ), "callvote %s \"%d %s\"\n;", szIssue, pPlayer->GetUserID(), pReasonString );
 							engine->ClientCmd( szVoteCommand );
-#ifdef TF_CLIENT_DLL
-							CSteamID steamID;
-							CTFPlayer* pSubject = ToTFPlayer( pPlayer );
-							if ( pSubject && pSubject->GetSteamID( &steamID ) && steamID.GetAccountID() != 0 )
-							{
-								GCSDK::CProtoBufMsg<CMsgTFVoteKickBanPlayer> msg( k_EMsgGCVoteKickBanPlayer );
-								uint32 reason = GetKickBanPlayerReason( pReasonString );
-								msg.Body().set_account_id_subject( steamID.GetAccountID() );
-								msg.Body().set_kick_reason( reason );
-								GCClientSystem()->BSendMessage( msg );
-							}
-#endif
+							// The GC report of this vote used k_EMsgGCVoteKickBanPlayer /
+							// CMsgTFVoteKickBanPlayer, which tf_gcmessages.proto disables:
+							// "disabled in GDPR sweep but could be made compliant and returned".
+							// Re-enabling the message to satisfy the compiler would restore
+							// reporting Valve deliberately removed, and there is no Game
+							// Coordinator on this platform in any case. The vote itself is
+							// issued by the ClientCmd above, so kick voting is unaffected.
 						}
 					}
 				}
