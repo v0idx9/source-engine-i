@@ -85,7 +85,8 @@ CMDLPanel::CMDLPanel( vgui::Panel *pParent, const char *pName ) : BaseClass( pPa
 
 CMDLPanel::~CMDLPanel()
 {
-	m_aMergeMDLs.Purge();
+	DestroyStudioHdr( m_RootMDL );
+	ClearMergeMDLs();
 	m_DefaultEnvCubemap.Shutdown( );
 	m_DefaultHDREnvCubemap.Shutdown();
 }
@@ -143,10 +144,42 @@ void CMDLPanel::SetThumbnailSafeZone( bool bVisible )
 //-----------------------------------------------------------------------------
 // Stores the clip
 //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Purpose: Build the cached CStudioHdr for an entry, discarding any previous
+//			one. Safe to call on an entry with no model - the cache simply ends
+//			up NULL, which is what the callers test for.
+//-----------------------------------------------------------------------------
+void CMDLPanel::UpdateStudioHdr( MDLData_t &mdlData )
+{
+	DestroyStudioHdr( mdlData );
+
+	MDLHandle_t handle = mdlData.m_MDL.GetMDL();
+	if ( handle == MDLHANDLE_INVALID )
+		return;
+
+	studiohdr_t *pStudioHdr = g_pMDLCache->GetStudioHdr( handle );
+	if ( !pStudioHdr )
+		return;
+
+	mdlData.m_pStudioHdr = new CStudioHdr();
+	mdlData.m_pStudioHdr->Init( pStudioHdr, g_pMDLCache );
+}
+
+void CMDLPanel::DestroyStudioHdr( MDLData_t &mdlData )
+{
+	if ( mdlData.m_pStudioHdr )
+	{
+		delete mdlData.m_pStudioHdr;
+		mdlData.m_pStudioHdr = NULL;
+	}
+}
+
+
 void CMDLPanel::SetMDL( MDLHandle_t handle, void *pProxyData )
 {
 	m_RootMDL.m_MDL.SetMDL( handle );
 	m_RootMDL.m_MDL.m_pProxyData = pProxyData;
+	UpdateStudioHdr( m_RootMDL );
 
 	Vector vecMins, vecMaxs;
 	GetMDLBoundingBox( &vecMins, &vecMaxs, handle, m_RootMDL.m_MDL.m_nSequence );
@@ -809,6 +842,7 @@ void CMDLPanel::SetMergeMDL( MDLHandle_t handle, void *pProxyData, int nSkin /*=
 		return;
 
 	m_aMergeMDLs[iIndex].m_MDL.SetMDL( handle );
+	UpdateStudioHdr( m_aMergeMDLs[iIndex] );
 
 	if ( nSkin != -1 )
 	{
@@ -894,9 +928,32 @@ CMDL *CMDLPanel::GetMergeMDL( MDLHandle_t handle )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: The cached studio header for a merged model, or NULL if that model
+//			is not merged onto this panel.
+//-----------------------------------------------------------------------------
+CStudioHdr *CMDLPanel::GetMergeMDLStudioHdr( MDLHandle_t handle )
+{
+	int nMergeCount = m_aMergeMDLs.Count();
+	for ( int iMerge = 0; iMerge < nMergeCount; ++iMerge )
+	{
+		if ( m_aMergeMDLs[iMerge].m_MDL.GetMDL() == handle )
+			return m_aMergeMDLs[iMerge].m_pStudioHdr;
+	}
+
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CMDLPanel::ClearMergeMDLs( void )
 {
+	// Purge() releases the vector's memory without running destructors, so the
+	// cached studio headers have to be freed by hand first.
+	for ( int i = 0; i < m_aMergeMDLs.Count(); ++i )
+	{
+		DestroyStudioHdr( m_aMergeMDLs[i] );
+	}
+
 	m_aMergeMDLs.Purge();
 }

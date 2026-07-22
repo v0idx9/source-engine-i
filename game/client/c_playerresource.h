@@ -54,6 +54,10 @@ public : // IGameResources intreface
 	virtual int		GetFrags( int index );
 	virtual int		GetHealth( int index );
 
+	// Steam account ID for a player slot, or 0 if the slot is empty, the player
+	// is a bot, or Steam has no ID for them (always the case offline on iOS).
+	virtual uint32	GetAccountID( int index );
+
 	virtual void ClientThink();
 	virtual	void	OnDataChanged(DataUpdateType_t updateType);
 

@@ -94,6 +94,12 @@ public:
 	int		GetMergeMDLIndex( void *pProxyData );
 	int		GetMergeMDLIndex( MDLHandle_t handle );
 	CMDL	*GetMergeMDL(MDLHandle_t handle );
+	CStudioHdr *GetMergeMDLStudioHdr( MDLHandle_t handle );
+
+	// Build/release the cached studio header for one entry. Kept together so
+	// the "free the old one before overwriting" rule lives in one place.
+	void	UpdateStudioHdr( MDLData_t &mdlData );
+	void	DestroyStudioHdr( MDLData_t &mdlData );
 	void	ClearMergeMDLs( void );
 
 	virtual void	SetupFlexWeights( void ) { return; }
@@ -114,6 +120,15 @@ protected:
 		matrix3x4_t	m_MDLToWorld;
 		bool		m_bDisabled;
 		float		m_flCycleStartTime;
+
+		// Cached wrapper around this MDL's studio header. Owned by the panel,
+		// which builds it in SetMDL/SetMergeMDL and releases it in
+		// ClearMergeMDLs and the destructor. Deliberately no destructor here:
+		// CUtlVector relocates elements by moving raw memory rather than by
+		// copy construction, so an owning destructor would double-free.
+		CStudioHdr	*m_pStudioHdr;
+
+		MDLData_t() : m_bDisabled( false ), m_flCycleStartTime( 0.0f ), m_pStudioHdr( NULL ) {}
 	};
 
 	MDLData_t				m_RootMDL;

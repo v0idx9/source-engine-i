@@ -309,6 +309,24 @@ int	C_PlayerResource::GetHealth( int iIndex )
 	return m_iHealth[iIndex];
 }
 
+uint32 C_PlayerResource::GetAccountID( int iIndex )
+{
+	if ( !IsConnected( iIndex ) )
+		return 0;
+
+	C_BasePlayer *pPlayer = UTIL_PlayerByIndex( iIndex );
+	if ( !pPlayer )
+		return 0;
+
+	// Bots and offline play have no Steam identity, so GetSteamID fails and the
+	// callers fall back to whatever they show for an unknown account.
+	CSteamID steamID;
+	if ( !pPlayer->GetSteamID( &steamID ) )
+		return 0;
+
+	return steamID.GetAccountID();
+}
+
 const Color &C_PlayerResource::GetTeamColor(int index )
 {
 	if ( index < 0 || index >= MAX_TEAMS )
