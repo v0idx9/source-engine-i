@@ -154,6 +154,10 @@ S_API void *SteamUser() {
 	return NULL;
 }
 
+S_API void *SteamTimeline() {
+	return NULL;
+}
+
 S_API void *SteamUserStats() {
 	return NULL;
 }
