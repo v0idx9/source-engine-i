@@ -98,7 +98,7 @@ void CMumbleSystem::LevelInitPostEntity()
 		g_hMapObject = NULL;
 		return;
 	}
-#elif defined( ANDROID ) || defined( IOS )
+#elif defined( ANDROID )
 	return; // TODO(JusicP): implement
 #elif defined( POSIX )
 	char memname[256];

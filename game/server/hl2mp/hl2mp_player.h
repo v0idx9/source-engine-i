@@ -19,6 +19,9 @@ class CHL2MP_Player;
 #include "hl2mp_player_shared.h"
 #include "hl2mp_gamerules.h"
 #include "utldict.h"
+#ifdef SBPP
+#include "hl2mp_playeranimstate.h"
+#endif
 
 //=============================================================================
 // >> HL2MP_Player
@@ -51,13 +54,22 @@ public:
 
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
+#ifdef SBPP
+	DECLARE_PREDICTABLE();
+
+	// This passes the event to the client's and server's CHL2MPPlayerAnimState.
+	void			DoAnimationEvent( PlayerAnimEvent_t event, int nData = 0 );
+	void			SetupBones( matrix3x4_t *pBoneToWorld, int boneMask );
+#endif
 
 	virtual void Precache( void );
 	virtual void Spawn( void );
 	virtual void PostThink( void );
 	virtual void PreThink( void );
 	virtual void PlayerDeathThink( void );
+#ifndef SBPP
 	virtual void SetAnimation( PLAYER_ANIM playerAnim );
+#endif
 	virtual bool HandleCommand_JoinTeam( int team );
 	virtual bool ClientCommand( const CCommand &args );
 	virtual void CreateViewModel( int viewmodelindex = 0 );
@@ -70,7 +82,9 @@ public:
 	virtual bool BumpWeapon( CBaseCombatWeapon *pWeapon );
 	virtual void ChangeTeam( int iTeam );
 	virtual void PickupObject ( CBaseEntity *pObject, bool bLimitMassAndSize );
+#ifndef SBPP
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
+#endif
 	virtual void Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL );
 	virtual void UpdateOnRemove( void );
 	virtual void DeathSound( const CTakeDamageInfo &info );
@@ -79,12 +93,17 @@ public:
 	int FlashlightIsOn( void );
 	void FlashlightTurnOn( void );
 	void FlashlightTurnOff( void );
+#ifndef SBPP
 	void	PrecacheFootStepSounds( void );
+#endif
 	bool	ValidatePlayerModel( const char *pModel );
 
+#ifndef SBPP
 	QAngle GetAnimEyeAngles( void ) { return m_angEyeAngles.Get(); }
+#endif
 
 	Vector GetAttackSpread( CBaseCombatWeapon *pWeapon, CBaseEntity *pTarget = NULL );
+	virtual Vector GetAutoaimVector( float flDelta );
 
 	void CheatImpulseCommands( int iImpulse );
 	void CreateRagdollEntity( void );
@@ -93,7 +112,11 @@ public:
 
 	void NoteWeaponFired( void );
 
+#ifdef SBPP
+	void SetAnimation( PLAYER_ANIM playerAnim );
+#else
 	void ResetAnimation( void );
+#endif
 	void SetPlayerModel( void );
 	void SetPlayerTeamModel( void );
 	Activity TranslateTeamActivity( Activity ActToTranslate );
@@ -134,14 +157,53 @@ public:
 
 	// Tracks our ragdoll entity.
 	CNetworkHandle( CBaseEntity, m_hRagdoll );	// networked entity handle 
+#ifdef SBPP
+	CNetworkVar( float, m_flStartCharge );
+	CNetworkVar( float, m_flAmmoStartCharge );
+	CNetworkVar( float, m_flPlayAftershock );
+	CNetworkVar( float, m_flNextAmmoBurn );
+#endif
 
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
 		
+#ifdef SBPP
+	CHL2MPPlayerAnimState *GetAnimState() const { return m_PlayerAnimState; }
+	virtual void StartTaunt(Activity aDance);
+	virtual void EndTaunt();
+	virtual void TauntThink();
+
+	virtual bool IsTaunting() const { return m_bTaunting; }
+
+	virtual Activity GetDanceAct() const { return m_aCurrentTaunt; }
+
+	virtual int GetPlayerColorR() const { return m_iPlayerColorR; }
+	virtual int GetPlayerColorG() const { return m_iPlayerColorG; }
+	virtual int GetPlayerColorB() const { return m_iPlayerColorB; }
+
+	virtual bool IsChatting() const { return m_bIsChatting; }
+	virtual bool IsNoclipping() const { return m_bIsNoclipping; }
+
+	/* And whatever this monstrosity is */
+	virtual void SetChatting(bool bValue) { m_bIsChatting = bValue; }
+	virtual void SetNoclipping(bool bValue) { m_bIsNoclipping = bValue; }
+
+	const char *GetSpecialID() const { return m_szUserID; }
+	void SetSpecialID( const char *id ) { Q_strncpy( m_szUserID.GetForModify(), id, sizeof( m_szUserID ) ); }
+
+	virtual void UpdatePlayerColors();
+
+public:
+    CUtlString m_CurrentHandModel;
+#endif
 private:
 
 	CNetworkQAngle( m_angEyeAngles );
+#ifdef SBPP
+	CHL2MPPlayerAnimState *m_PlayerAnimState;
+#else
 	CPlayerAnimState   m_PlayerAnimState;
+#endif
 
 	int m_iLastWeaponFireUsercmd;
 	int m_iModelType;
@@ -150,6 +212,23 @@ private:
 
 	float m_flNextModelChangeTime;
 	float m_flNextTeamChangeTime;
+#ifdef SBPP
+	CNetworkVar( bool, m_bTaunting );
+	CNetworkVar( Activity, m_aCurrentTaunt );
+
+	// player color
+	CNetworkVar( int, m_iPlayerColorR );
+	CNetworkVar( int, m_iPlayerColorG );
+	CNetworkVar( int, m_iPlayerColorB );
+
+	CNetworkVar( bool, m_bIsChatting );
+	CNetworkVar( bool, m_bIsNoclipping );
+
+	CNetworkString( m_szUserID, 33 );
+
+	float   m_flTauntEndTime;
+	int     m_iTauntSeq;
+#endif
 
 	float m_flSlamProtectTime;	
 

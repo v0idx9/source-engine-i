@@ -9,10 +9,15 @@
 #define HL2MP_PLAYER_H
 #pragma once
 
+#ifndef SBPP
 class C_HL2MP_Player;
+#endif
 #include "c_basehlplayer.h"
 #include "hl2mp_player_shared.h"
 #include "beamdraw.h"
+#ifdef SBPP
+#include "hl2mp_playeranimstate.h"
+#endif
 
 //=============================================================================
 // >> HL2MP_Player
@@ -58,7 +63,9 @@ public:
 	virtual void CreateLightEffects( void ) {}
 	virtual bool ShouldReceiveProjectedTextures( int flags );
 	virtual void PostDataUpdate( DataUpdateType_t updateType );
+#ifndef SBPP
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
+#endif
 	virtual void PreThink( void );
 	virtual void DoImpactEffect( trace_t &tr, int nDamageType );
 	IRagdoll* GetRepresentativeRagdoll() const;
@@ -74,7 +81,9 @@ public:
 	void	Initialize( void );
 	int		GetIDTarget() const;
 	void	UpdateIDTarget( void );
+#ifndef SBPP
 	void	PrecacheFootStepSounds( void );
+#endif
 	const char	*GetPlayerModelSoundPrefix( void );
 
 	HL2MPPlayerState State_Get() const;
@@ -84,13 +93,46 @@ public:
 	void StopWalking( void );
 	bool IsWalking( void ) { return m_fIsWalking; }
 
+#ifndef SBPP
 	virtual void PostThink( void );
+#else
+	virtual void					UpdateClientSideAnimation();
+	void DoAnimationEvent( PlayerAnimEvent_t event, int nData = 0 );
+	virtual void CalculateIKLocks( float currentTime );
+
+	CNetworkVar( float, m_flStartCharge );
+	CNetworkVar( float, m_flAmmoStartCharge );
+	CNetworkVar( float, m_flPlayAftershock );
+	CNetworkVar( float, m_flNextAmmoBurn );
+
+	CHL2MPPlayerAnimState *GetAnimState() const { return m_PlayerAnimState; }
+	virtual bool IsTaunting() const { return m_bTaunting; }
+	virtual Activity GetDanceAct() const { return m_aCurrentTaunt; } 
+
+	virtual int GetPlayerColorR() const { return m_iPlayerColorR; }
+	virtual int GetPlayerColorG() const { return m_iPlayerColorG; }
+	virtual int GetPlayerColorB() const { return m_iPlayerColorB; }
+
+	virtual bool IsChatting() const { return m_bIsChatting; }
+	virtual bool IsNoclipping() const { return m_bIsNoclipping; }
+
+	/* And whatever this monstrosity is */
+	virtual void SetChatting(bool bValue) { m_bIsChatting = bValue; }
+	virtual void SetNoclipping(bool bValue) { m_bIsNoclipping = bValue; }
+
+	const char *GetSpecialID() const { return m_szUserID; }
+	void SetSpecialID( const char *id ) { Q_strncpy( m_szUserID.GetForModify(), id, sizeof( m_szUserID ) ); }
+#endif
 
 private:
 	
 	C_HL2MP_Player( const C_HL2MP_Player & );
 
+#ifdef SBPP
+	CHL2MPPlayerAnimState *m_PlayerAnimState;
+#else
 	CPlayerAnimState m_PlayerAnimState;
+#endif
 
 	QAngle	m_angEyeAngles;
 
@@ -98,6 +140,20 @@ private:
 
 	EHANDLE	m_hRagdoll;
 
+#ifdef SBPP
+	CNetworkVar( bool, m_bTaunting );
+	CNetworkVar( Activity, m_aCurrentTaunt );
+
+	// player color
+	CNetworkVar( int, m_iPlayerColorR );
+	CNetworkVar( int, m_iPlayerColorG );
+	CNetworkVar( int, m_iPlayerColorB );
+
+	CNetworkVar( bool, m_bIsChatting );
+	CNetworkVar( bool, m_bIsNoclipping );
+
+	CNetworkString( m_szUserID, 33 );
+#endif
 	int	m_headYawPoseParam;
 	int	m_headPitchPoseParam;
 	float m_headYawMin;
@@ -119,7 +175,13 @@ private:
 	int	  m_iSpawnInterpCounter;
 	int	  m_iSpawnInterpCounterCache;
 
+#ifdef SBPP // workaround for c_hands
+public:
+#endif
 	int	  m_iPlayerSoundType;
+#ifdef SBPP
+private:
+#endif
 
 	void ReleaseFlashlight( void );
 	Beam_t	*m_pFlashlightBeam;
@@ -163,9 +225,17 @@ private:
 	void Interp_Copy( C_BaseAnimatingOverlay *pDestinationEntity );
 	void CreateHL2MPRagdoll( void );
 
+#ifndef SBPP
 private:
+#else
+public:
+#endif
 
 	EHANDLE	m_hPlayer;
+
+#ifdef SBPP
+private:
+#endif
 	CNetworkVector( m_vecRagdollVelocity );
 	CNetworkVector( m_vecRagdollOrigin );
 };

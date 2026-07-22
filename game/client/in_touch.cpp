@@ -80,8 +80,14 @@ void CInput::ApplyTouch( QAngle &viewangles, CUserCmd *cmd, float dx, float dy )
 {
 	viewangles[YAW] -= dx;
 	viewangles[PITCH] += dy;
+#ifndef SBPP
 	cmd->mousedx = dx;
 	cmd->mousedy = dy;
+#else
+	// Stupid dirty hack
+	cmd->mousedx = (int)(dx * 100.f);
+    cmd->mousedy = (int)(dy * 100.f);
+#endif
 }
 
 void CInput::TouchMove( CUserCmd *cmd )
@@ -108,6 +114,49 @@ void CInput::TouchMove( CUserCmd *cmd )
 	// Add mouse X/Y movement to cmd
 	ApplyTouch( viewangles, cmd, dx, dy );
 
+#ifdef SBPP
+    bool bWeaponOverride = false;
+    C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
+    if ( pPlayer )
+    {
+        C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
+        if ( pWeapon )
+            bWeaponOverride = pWeapon->OverrideViewAngles();
+    }
+#endif
+
 	// Store out the new viewangles.
-	engine->SetViewAngles( viewangles );
+#ifdef SBPP
+    if ( !bWeaponOverride )
+#endif
+        engine->SetViewAngles( viewangles );
 }
+
+#ifdef SBPP
+CON_COMMAND( touch_simulate, "simulate a touch event" )
+{
+    if( args.ArgC() < 4 )
+    {
+        Msg("Usage: touch_simulate <down|up|move> <x 0-1> <y 0-1>\n");
+        return;
+    }
+
+    touch_event_t ev;
+    ev.fingerid = 99; // fake finger id..
+
+    const char *type = args[1];
+    if( Q_strcmp(type, "down") == 0 )
+        ev.type = IE_FingerDown;
+    else if( Q_strcmp(type, "up") == 0 )
+        ev.type = IE_FingerUp;
+    else
+        ev.type = IE_FingerMotion;
+
+    ev.x = Q_atof( args[2] );
+    ev.y = Q_atof( args[3] );
+    ev.dx = args.ArgC() >= 5 ? Q_atof( args[4] ) : 0.f;
+    ev.dy = args.ArgC() >= 6 ? Q_atof( args[5] ) : 0.f;
+
+    gTouch.ProcessEvent( &ev );
+}
+#endif

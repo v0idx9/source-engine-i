@@ -25,6 +25,9 @@
 #include "vgui/ILocalize.h"
 #include "multiplay_gamerules.h"
 #include "tier0/icommandline.h"
+#ifdef SBPP
+#include "c_hl2mp_player.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -43,9 +46,16 @@ Color g_ColorBlue( 153, 204, 255, 255 );
 Color g_ColorRed( 255, 63, 63, 255 );
 Color g_ColorGreen( 153, 255, 153, 255 );
 Color g_ColorDarkGreen( 64, 255, 64, 255 );
+#ifdef SBPP
+Color g_ColorYellow( 255, 255, 102, 255 );
+#else
 Color g_ColorYellow( 255, 178, 0, 255 );
+#endif
 Color g_ColorGrey( 204, 204, 204, 255 );
 
+#ifdef SBPP
+Color g_ColorWhite(255, 255, 255, 255);
+#endif // AS_DLL
 
 // removes all color markup characters, so Msg can deal with the string properly
 // returns a pointer to str
@@ -396,7 +406,7 @@ void CBaseHudChatInputLine::ApplySchemeSettings(vgui::IScheme *pScheme)
 	vgui::HFont hFont;
 
 	// FIXME:  Outline
-	if( IsMobile() )
+	if( IsAndroid() )
 		hFont = pScheme->GetFont( "ChatFont", true );
 	else
 		hFont = pScheme->GetFont( "ChatFont" );
@@ -588,7 +598,7 @@ CHudChatHistory::CHudChatHistory( vgui::Panel *pParent, const char *panelName ) 
 {
 	vgui::HScheme scheme;
 
-	if( IsMobile() && !CommandLine()->FindParm( "-nocustomchat" ) )
+	if( IsAndroid() && !CommandLine()->FindParm( "-nocustomchat" ) )
 		scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/customchatscheme.res", "ChatScheme");
 	else
 		scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ChatScheme.res", "ChatScheme");
@@ -602,7 +612,7 @@ void CHudChatHistory::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings( pScheme );
 
-	if( IsMobile() )
+	if( IsAndroid() )
 		SetFont( pScheme->GetFont( "ChatFont", true ) );
 	else
 		SetFont( pScheme->GetFont( "ChatFont" ) );
@@ -622,7 +632,7 @@ CBaseHudChat::CBaseHudChat( const char *pElementName )
 
 	vgui::HScheme scheme;
 
-	if( IsMobile() && !CommandLine()->FindParm( "-nocustomchat" ) )
+	if( IsAndroid() && !CommandLine()->FindParm( "-nocustomchat" ) )
 		scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/customchatscheme.res", "ChatScheme" );
 	else
 		scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ChatScheme.res", "ChatScheme" );
@@ -698,7 +708,7 @@ CHudChatFilterPanel *CBaseHudChat::GetChatFilterPanel( void )
 		{
 			vgui::HScheme scheme;
 
-			if( IsMobile() && !CommandLine()->FindParm( "-nocustomchat" ) )
+			if( IsAndroid() && !CommandLine()->FindParm( "-nocustomchat" ) )
 				scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/customchatscheme.res", "ChatScheme");
 			else
 				scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ChatScheme.res", "ChatScheme");
@@ -717,7 +727,7 @@ CHudChatFilterPanel *CBaseHudChat::GetChatFilterPanel( void )
 
 void CBaseHudChat::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
-	if( IsMobile() && !CommandLine()->FindParm( "-nocustomchat" ) )
+	if( IsAndroid() && !CommandLine()->FindParm( "-nocustomchat" ) )
 		LoadControlSettings( "resource/UI/customchat.res" );
 	else
 		LoadControlSettings( "resource/UI/BaseChat.res" );
@@ -1227,6 +1237,11 @@ void CBaseHudChat::StartMessageMode( int iMessageModeType )
 	m_pChatInput->RequestFocus();
 	m_pChatInput->SetPaintBorderEnabled( true );
 	m_pChatInput->SetMouseInputEnabled( true );
+#ifdef SBPP
+	C_HL2MP_Player *pHL2MPPlayer = ToHL2MPPlayer( C_BasePlayer::GetLocalPlayer() );
+	if ( pHL2MPPlayer )
+		pHL2MPPlayer->SetChatting( true );
+#endif
 
 	//Place the mouse cursor near the text so people notice it.
 	int x, y, w, h;
@@ -1273,6 +1288,11 @@ void CBaseHudChat::StopMessageMode( void )
 	m_flHistoryFadeTime = gpGlobals->curtime + CHAT_HISTORY_FADE_TIME;
 
 	m_nMessageMode = MM_NONE;
+#ifdef SBPP
+	C_HL2MP_Player *pHL2MPPlayer = ToHL2MPPlayer( C_BasePlayer::GetLocalPlayer() );
+	if ( pHL2MPPlayer )
+		pHL2MPPlayer->SetChatting( false );
+#endif
 #endif
 }
 
@@ -1383,7 +1403,11 @@ void CBaseHudChat::SetCustomColor( const char *pszColorName )
 //-----------------------------------------------------------------------------
 Color CBaseHudChat::GetDefaultTextColor( void )
 {
+#ifndef SBPP
 	return g_ColorYellow;
+#else
+	return g_ColorWhite;
+#endif // AS_DLL
 }
 
 //-----------------------------------------------------------------------------
@@ -1398,7 +1422,11 @@ Color CBaseHudChat::GetClientColor( int clientIndex )
 		return g_ColorGrey;
 	}
 
+#ifndef SBPP
 	return g_ColorYellow;
+#else
+	return g_ColorWhite;
+#endif // AS_DLL
 }
 
 //-----------------------------------------------------------------------------

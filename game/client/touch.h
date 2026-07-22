@@ -36,7 +36,8 @@ enum ETouchButtonType
 	touch_joy,     // Like a joystick stick, centered.
 	touch_dpad,    // Only two directions.
 	touch_look,     // Like a touchpad.
-	touch_key
+	touch_key,
+	touch_joystick // IS a joystick (on-screen)
 };
 
 enum ETouchState
@@ -79,13 +80,17 @@ struct event_s
 
 struct CTouchTexture
 {
-	IVTFTexture *vtf;
+    IVTFTexture *vtf;
 
-	float X0, Y0, X1, Y1; // position in atlas texture
-	int height, width;
-	int textureID;
-	bool isInAtlas;
-	char szName[1024];
+    float X0, Y0, X1, Y1;
+    int height, width;
+    int textureID;
+    bool isInAtlas;
+    char szName[1024];
+
+    unsigned char *rawData = nullptr;
+    int channels = 0;
+    bool isStbImage = false;
 };
 
 class CTouchButton
@@ -219,6 +224,11 @@ private:
 	int touchTextureID;
 	IMesh* m_pMesh;
 	CMeshBuilder meshBuilder;
+
+	Vector2D m_vecJoystickCenter;
+	Vector2D m_vecJoystickCurrent;
+	bool     m_bJoystickActive;
+	float    m_flJoystickRadius;
 
 	// editing
 	CTouchButton *edit;

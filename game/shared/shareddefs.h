@@ -106,23 +106,41 @@ public:
 	#define TIME_TO_DUCK		0.2
 	#define TIME_TO_DUCK_MS		200.0f
 #else
+	#ifdef MOON
+	#define TIME_TO_DUCK		0.2
+	#define TIME_TO_DUCK_MS		200.0f
+	#else
 	#define TIME_TO_DUCK		0.4
 	#define TIME_TO_DUCK_MS		400.0f
+	#endif // MOON
 #endif 
 #define TIME_TO_UNDUCK		0.2
 #define TIME_TO_UNDUCK_MS	200.0f
 
 #define MAX_WEAPON_SLOTS		6	// hud item selection slots
+#ifdef SBPP
+#define MAX_WEAPON_POSITIONS	128	// max number of items within a slot
+#else
 #define MAX_WEAPON_POSITIONS	20	// max number of items within a slot
+#endif
 #define MAX_ITEM_TYPES			6	// hud item selection slots
+#ifdef SBPP
+#define MAX_WEAPONS				512	// Max number of weapons available
+#else
 #define MAX_WEAPONS				48	// Max number of weapons available
+#endif
 
 #define MAX_ITEMS				5	// hard coded item types
 
 #define WEAPON_NOCLIP			-1	// clip sizes set to this tell the weapon it doesn't use a clip
 
+#ifdef MOON
+#define	MAX_AMMO_TYPES	512		// ???
+#define MAX_AMMO_SLOTS  512		// not really slots
+#else
 #define	MAX_AMMO_TYPES	32		// ???
 #define MAX_AMMO_SLOTS  32		// not really slots
+#endif // MOON
 
 #define HUD_PRINTNOTIFY		1
 #define HUD_PRINTCONSOLE	2
@@ -227,8 +245,24 @@ enum CastVote
 #if defined( CSTRIKE_DLL )
 	#define MAX_PLAYERS				65  // Absolute max players supported
 #else
+	#ifdef MOON
+	#define MAX_PLAYERS				255  // Absolute max players supported
+	#else
 	#define MAX_PLAYERS				33  // Absolute max players supported
+	#endif // MOON
 #endif
+
+// Josh: Accounts for code that may index this array by an entindex
+// of player rather than the player index... :s
+#define MAX_PLAYERS_ARRAY_SAFE		( MAX_PLAYERS + 1 )
+
+inline bool IsIndexIntoPlayerArrayValid( int iIndex )
+{
+	if ( iIndex < 0 || iIndex >= MAX_PLAYERS_ARRAY_SAFE )
+		return false;
+		
+	return true;
+}
 
 #define MAX_PLACE_NAME_LENGTH		18
 
@@ -251,6 +285,8 @@ enum CastVote
 
 // Weapon m_iState
 #define WEAPON_IS_ONTARGET				0x40
+
+#define MAX_TEAMS_ARRAY_SAFE 	MAX_TEAMS
 
 #define WEAPON_NOT_CARRIED				0	// Weapon is on the ground
 #define WEAPON_IS_CARRIED_BY_PLAYER		1	// This client is carrying this weapon.

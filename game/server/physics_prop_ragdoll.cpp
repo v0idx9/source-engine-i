@@ -62,6 +62,10 @@ IMPLEMENT_SERVERCLASS_ST(CRagdollProp, DT_Ragdoll)
 	SendPropEHandle(SENDINFO( m_hUnragdoll ) ),
 	SendPropFloat(SENDINFO(m_flBlendWeight), 8, SPROP_ROUNDDOWN, 0.0f, 1.0f ),
 	SendPropInt(SENDINFO(m_nOverlaySequence), 11),
+
+#ifdef SBPP
+	SendPropDataTable("baseclass", 0, &REFERENCE_SEND_TABLE(DT_BaseFlex)),
+#endif
 END_SEND_TABLE()
 
 #define DEFINE_RAGDOLL_ELEMENT( i ) \
@@ -407,11 +411,13 @@ void CRagdollProp::OnPhysGunDrop( CBasePlayer *pPhysGunUser, PhysGunDrop_t Reaso
 		s_RagdollLRU.MoveToTopOfLRU( this );
 	}
 
+#ifndef SBPP
 	// Make sure it's interactive debris for at most 5 seconds
 	if ( GetCollisionGroup() == COLLISION_GROUP_INTERACTIVE_DEBRIS )
 	{
 		SetContextThink( &CRagdollProp::SetDebrisThink, gpGlobals->curtime + 5, s_pDebrisContext );
 	}
+#endif
 
 	if ( Reason != LAUNCHED_BY_CANNON )
 		return;
@@ -678,11 +684,13 @@ void CRagdollProp::InitRagdoll( const Vector &forceVector, int forceBone, const 
 {
 	SetCollisionGroup( collisionGroup );
 
+#ifndef SBPP
 	// Make sure it's interactive debris for at most 5 seconds
 	if ( collisionGroup == COLLISION_GROUP_INTERACTIVE_DEBRIS )
 	{
 		SetContextThink( &CRagdollProp::SetDebrisThink, gpGlobals->curtime + 5, s_pDebrisContext );
 	}
+#endif
 
 	SetMoveType( MOVETYPE_VPHYSICS );
 	SetSolid( SOLID_VPHYSICS );
@@ -1009,6 +1017,7 @@ void CRagdollProp::VPhysicsUpdate( IPhysicsObject *pPhysics )
 		}
 	}
 	
+#ifndef SBPP
 	// Interactive debris converts back to debris when it comes to rest
 	if ( m_allAsleep && GetCollisionGroup() == COLLISION_GROUP_INTERACTIVE_DEBRIS )
 	{
@@ -1016,6 +1025,7 @@ void CRagdollProp::VPhysicsUpdate( IPhysicsObject *pPhysics )
 		RecheckCollisionFilter();
 		SetContextThink( NULL, gpGlobals->curtime, s_pDebrisContext );
 	}
+#endif
 
 	Vector vecFullMins, vecFullMaxs;
 	vecFullMins = m_ragPos[0];
@@ -1131,7 +1141,11 @@ void CRagdollProp::FadeOutThink(void)
 		// Necessary to cause it to do the appropriate death cleanup
 		// Yeah, the player may have nothing to do with it, but
 		// passing NULL to TakeDamage causes bad things to happen
+#ifdef HL2SB
+		CBasePlayer *pPlayer = UTIL_GetNearestPlayer( GetAbsOrigin() );
+#else
 		CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+#endif
 		CTakeDamageInfo info( pPlayer, pPlayer, 10000.0, DMG_GENERIC );
 		TakeDamage( info );
 		UTIL_Remove( this );

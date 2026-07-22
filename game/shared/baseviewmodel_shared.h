@@ -47,6 +47,9 @@ public:
 	bool IsViewable(void) { return false; }
 
 	virtual void					UpdateOnRemove( void );
+#ifdef SBPP
+ 	void		CalcIronsights( Vector &pos, QAngle &ang );
+#endif
 
 	// Weapon client handling
 	virtual void			SendViewModelMatchingSequence( int sequence );
@@ -145,7 +148,8 @@ public:
 	// Should this object receive shadows?
 	virtual bool			ShouldReceiveProjectedTextures( int flags )
 	{
-		return false;
+		// @ThePixelMoon: fuck it what do i have to lose
+		return true;
 	}
 
 	// Add entity to visible view models list?
@@ -197,7 +201,6 @@ private:
 #if defined( CLIENT_DLL )
 	int						m_nOldAnimationParity;
 #endif
-
 
 	typedef CHandle< CBaseCombatWeapon > CBaseCombatWeaponHandle;
 	CNetworkVar( CBaseCombatWeaponHandle, m_hWeapon );
