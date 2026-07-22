@@ -734,6 +734,33 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 
 	pMainFile->deleteThis();
 
+	// Let the mod directory supply its own client/server modules.
+	//
+	// The engine loads the game DLLs with LoadModule( "server", "GAMEBIN" ), and
+	// on iOS those normally only exist inside the app bundle, so changing game
+	// code means rebuilding and reinstalling the whole app. m_ModPath is the
+	// directory holding gameinfo.txt - the writable folder content is dropped
+	// into - so adding its bin/ at the *head* of GAMEBIN lets a dylib placed
+	// there take precedence over the bundled one.
+	//
+	// Added unconditionally: if <mod>/bin holds no modules the search simply
+	// falls through to the bundled copies, so this costs nothing when unused.
+	//
+	// Note for iOS specifically: the kernel refuses to map unsigned executable
+	// pages, so a dylib dropped in here only loads on a device where that is
+	// not enforced (TrollStore, or jailbroken). Under normal App Store rules
+	// the load fails and the bundled module is used instead.
+	{
+		char szModBin[MAX_PATH];
+		V_strncpy( szModBin, initInfo.m_ModPath, sizeof( szModBin ) );
+		V_AppendSlash( szModBin, sizeof( szModBin ) );
+		V_strncat( szModBin, "bin", sizeof( szModBin ) );
+		V_FixSlashes( szModBin );
+
+		initInfo.m_pFileSystem->AddSearchPath( szModBin, "GAMEBIN", PATH_ADD_TO_HEAD );
+		Msg( "filesystem GAMEBIN override: %s\n", szModBin );
+	}
+
 	// Also, mark specific path IDs as "by request only". That way, we won't waste time searching in them
 	// when people forget to specify a search path.
 	initInfo.m_pFileSystem->MarkPathIDByRequestOnly( "executable_path", true );
