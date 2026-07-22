@@ -3487,15 +3487,17 @@ void CTeamplayRoundBasedRules::GetAllPlayersLobbyInfo( CUtlVector<LobbyPlayerInf
 	{
 		for ( int i = 0 ; i < pLobby->GetNumMembers() ; ++i )
 		{
+			ConstTFLobbyPlayer details = pLobby->GetMemberDetails( i );
+
 			LobbyPlayerInfo_t &mbr = vecPlayers[vecPlayers.AddToTail()];
 			mbr.m_nEntNum = 0; // assume he isn't in the game yet
-			mbr.m_sPlayerName = pLobby->GetMemberDetails( i )->name().c_str();
+			mbr.m_sPlayerName = details.GetName();
 			mbr.m_steamID = pLobby->GetMember( i );
 			mbr.m_iTeam = TEAM_UNASSIGNED;
 			mbr.m_bConnected = false;
 			mbr.m_bBot = false;
 			mbr.m_bInLobby = true;
-			mbr.m_bSquadSurplus = pLobby->GetMemberDetails( i )->squad_surplus();
+			mbr.m_bSquadSurplus = details.GetSquadSurplus();
 		}
 	}
 
@@ -3509,7 +3511,11 @@ void CTeamplayRoundBasedRules::GetAllPlayersLobbyInfo( CUtlVector<LobbyPlayerInf
 			player_info_t pi;
 			if ( !engine->GetPlayerInfo( i, &pi ) )
 				continue;
-			if ( pi.ishltv || pi.isreplay )
+			if ( pi.ishltv
+#if defined( REPLAY_ENABLED )
+				|| pi.isreplay
+#endif
+				)
 				continue;
 			bool bBot = pi.fakeplayer;
 		#else
