@@ -149,6 +149,16 @@ struct NewLaunchQueryParameters_t
 	enum { k_iCallback = k_iSteamAppsCallbacks + 14 };
 };
 
+//---------------------------------------------------------------------------------
+// Purpose: The same callback under the name later Steamworks SDKs use. This
+//			bundled SDK predates the rename, and TF2's secure launch system
+//			registers for the newer spelling.
+//---------------------------------------------------------------------------------
+struct NewUrlLaunchParameters_t
+{
+	enum { k_iCallback = k_iSteamAppsCallbacks + 14 };
+};
+
 
 #pragma pack( pop )
 #endif // ISTEAMAPPS_H
