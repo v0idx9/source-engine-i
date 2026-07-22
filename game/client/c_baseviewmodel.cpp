@@ -37,6 +37,7 @@
 #endif
 
 #ifdef TF_CLIENT_DLL
+	#include "tf/c_tf_player.h"
 	ConVar cl_flipviewmodels( "cl_flipviewmodels", "0", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_NOT_CONNECTED, "Flip view models." );
 #endif
 
@@ -87,6 +88,24 @@ void FormatViewModelAttachment( Vector &vOrigin, bool bInverse )
 	Vector vOut = (MainViewRight() * vTransformed.x) + (MainViewUp() * vTransformed.y) + (MainViewForward() * vTransformed.z);
 	vOrigin = pViewSetup->origin + vOut;
 }
+
+#ifdef TF_CLIENT_DLL
+bool TeamFortress_ShouldFlipClientViewModel( void )
+{
+	if ( IsLocalPlayerSpectator() )
+	{
+		// Use spectated client's handedness preference
+		C_TFPlayer *pSpecTarget = ToTFPlayer( UTIL_PlayerByIndex( GetSpectatorTarget() ) );
+		if ( pSpecTarget )
+		{
+			return pSpecTarget->m_bFlipViewModels;
+		}
+	}
+
+	return cl_flipviewmodels.GetBool();
+}
+#endif //TF_CLIENT_DLL
+
 
 
 void C_BaseViewModel::FormatViewModelAttachment( int nAttachment, matrix3x4_t &attachmentToWorld )

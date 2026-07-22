@@ -91,6 +91,9 @@ public:
 	void SetControlPointUpVector( int nWhichPoint, const Vector &v );
 	void SetControlPointRightVector( int nWhichPoint, const Vector &v );
 
+	void SetIsViewModelEffect ( bool bIsViewModelEffect ) { m_bViewModelEffect = bIsViewModelEffect; }
+	bool GetIsViewModelEffect () { return m_bViewModelEffect; }
+
 	FORCEINLINE EHANDLE const &GetControlPointEntity( int nWhichPoint )
 	{
 		return m_hControlPointOwners[ nWhichPoint ];
@@ -131,6 +134,10 @@ protected:
 	// Returns nonzero if Release() has been called.
 	int		IsReleased();
 	
+	// Set when the effect is attached to a view model, so its attachment
+	// points are formatted in view model space.
+	bool		m_bViewModelEffect;
+
 	// Used to track down bugs.
 	const char	*m_pDebugName;
 

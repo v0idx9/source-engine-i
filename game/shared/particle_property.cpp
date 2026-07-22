@@ -629,7 +629,9 @@ void CParticleProperty::UpdateControlPoint( ParticleEffectList_t *pEffect, int i
 					MatrixVectors( vMat.As3x4(), &vecForward, &vecRight, &vecUp );
 					MatrixPosition( vMat.As3x4(), vecOrigin );
 
-					if ( pEffect->pParticleEffect->m_pDef->IsViewModelEffect() )
+					// The definition can mark a whole effect as view model bound;
+					// TF2 also flags individual instances via SetIsViewModelEffect.
+					if ( pEffect->pParticleEffect->m_pDef->IsViewModelEffect() || pEffect->pParticleEffect->GetIsViewModelEffect() )
 					{
 						FormatViewModelAttachment( vecOrigin, true );
 					}
