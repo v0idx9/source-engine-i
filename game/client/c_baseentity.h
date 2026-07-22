@@ -695,6 +695,7 @@ public:
 	virtual bool					ShouldDraw();
 	inline	bool					IsVisible() const { return m_hRender != INVALID_CLIENT_RENDER_HANDLE; }
 	virtual void					UpdateVisibility();
+	void							TrackAngRotation( bool bTrack );
 	
 	// Returns true if the entity changes its position every frame on the server but it doesn't
 	// set animtime. In that case, the client returns true here so it copies the server time to

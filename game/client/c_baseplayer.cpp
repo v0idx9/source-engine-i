@@ -48,6 +48,10 @@
 #endif
 #include "steam/steam_api.h"
 #include "sourcevr/isourcevirtualreality.h"
+
+#ifdef TF_CLIENT_DLL
+#include "tf/c_tf_player.h"
+#endif
 #include "client_virtualreality.h"
 
 #if defined USES_ECON_ITEMS
@@ -147,6 +151,7 @@ BEGIN_RECV_TABLE_NOBASE( CPlayerLocalData, DT_Local )
 	
 	RecvPropFloat(RECVINFO(m_flFOVRate)),
 	
+	RecvPropBool	(RECVINFO(m_bForceLocalPlayerDraw)),
 	RecvPropInt		(RECVINFO(m_bDucked)),
 	RecvPropInt		(RECVINFO(m_bDucking)),
 	RecvPropInt		(RECVINFO(m_bInDuckJump)),
@@ -897,6 +902,16 @@ void C_BasePlayer::PostDataUpdate( DataUpdateType_t updateType )
 
 			m_nForceVisionFilterFlags = 0;
 			CalculateVisionUsingCurrentFlags();
+		}
+
+		if ( m_Local.m_bPrevForceLocalPlayerDraw != m_Local.m_bForceLocalPlayerDraw )
+		{
+#ifdef TF_CLIENT_DLL
+			C_TFPlayer *pTFPlayer = ToTFPlayer( this );
+			if ( pTFPlayer )
+				pTFPlayer->FlushAllPlayerVisibilityState();
+#endif
+			m_Local.m_bPrevForceLocalPlayerDraw = m_Local.m_bForceLocalPlayerDraw;
 		}
 	}
 

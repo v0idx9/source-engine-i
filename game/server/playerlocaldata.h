@@ -44,6 +44,7 @@ public:
 	Vector				m_vecOverViewpoint;			// Viewpoint overriding the real player's viewpoint
 	
 	// Fully ducked
+	CNetworkVar( bool, m_bForceLocalPlayerDraw );
 	CNetworkVar( bool, m_bDucked );
 	// In process of ducking
 	CNetworkVar( bool, m_bDucking );

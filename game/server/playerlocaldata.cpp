@@ -27,6 +27,7 @@ BEGIN_SEND_TABLE_NOBASE( CPlayerLocalData, DT_Local )
 	
 	SendPropInt		(SENDINFO(m_iHideHUD), HIDEHUD_BITCOUNT, SPROP_UNSIGNED),
 	SendPropFloat	(SENDINFO(m_flFOVRate), 0, SPROP_NOSCALE ),
+	SendPropBool	(SENDINFO(m_bForceLocalPlayerDraw)),
 	SendPropInt		(SENDINFO(m_bDucked),	1, SPROP_UNSIGNED ),
 	SendPropInt		(SENDINFO(m_bDucking),	1, SPROP_UNSIGNED ),
 	SendPropInt		(SENDINFO(m_bInDuckJump),	1, SPROP_UNSIGNED ),
@@ -139,6 +140,7 @@ BEGIN_SIMPLE_DATADESC( CPlayerLocalData )
 	DEFINE_FIELD( m_iHideHUD, FIELD_INTEGER ),
 	DEFINE_FIELD( m_flFOVRate, FIELD_FLOAT ),
 	DEFINE_FIELD( m_vecOverViewpoint, FIELD_VECTOR ),
+	DEFINE_FIELD( m_bForceLocalPlayerDraw, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bDucked, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bDucking, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bInDuckJump, FIELD_BOOLEAN ),
