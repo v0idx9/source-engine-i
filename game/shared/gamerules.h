@@ -201,6 +201,8 @@ public:
 
 	virtual void ModifySentChat( char *pBuf, int iBufSize ) { return; }
 
+	virtual bool ShouldConfirmOnDisconnect() { return false; }
+
 	virtual bool ShouldWarnOfAbandonOnQuit() { return false; }
 	
 #else
