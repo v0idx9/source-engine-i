@@ -86,6 +86,22 @@ bool CP4File::IsFileInPerforce()
 	return p4->IsFileInPerforce( m_sFilename.String() );
 }
 
+P4FileState_t CP4File::GetFileState()
+{
+	if ( !p4 )
+		return P4FILE_UNOPENED;
+
+	return p4->GetFileState( m_sFilename.String() );
+}
+
+bool CP4File::Delete()
+{
+	if ( !p4 )
+		return false;
+
+	return p4->OpenFileForDelete( m_sFilename.String() );
+}
+
 bool CP4File::SetFileType(const CUtlString& desiredFileType)
 {
 	/*if ( !p4 )

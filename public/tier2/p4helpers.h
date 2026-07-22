@@ -15,6 +15,7 @@
 
 #include "tier1/utlstring.h"
 #include "tier1/smartptr.h"
+#include "p4lib/ip4.h"
 
 
 //
@@ -42,6 +43,12 @@ public:
 	// Changes the file to the specified filetype.
 	virtual bool SetFileType( const CUtlString& desiredFileType );
 
+	// Current Perforce state of the file
+	virtual P4FileState_t GetFileState();
+
+	// Opens the file for delete
+	virtual bool Delete();
+
 protected:
 	// The filename that this class instance represents
 	CUtlString m_sFilename;
@@ -60,6 +67,8 @@ public:
 	virtual bool Add( void ) { return true; }
 	virtual bool IsFileInPerforce() { return false; }
 	virtual bool SetFileType(const CUtlString& desiredFileType) { return true; }
+	virtual P4FileState_t GetFileState() { return P4FILE_UNOPENED; }
+	virtual bool Delete() { return true; }
 };
 
 
