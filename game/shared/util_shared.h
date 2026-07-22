@@ -613,6 +613,38 @@ Color LerpColor( const Color &c0, const Color &c1, float t );
 
 CSteamID SteamIDFromDecimalString( const char *pszUint64InDecimal );
 
+//--------------------------------------------------------------------------------------------------------------
+// You can use this if you need an autolist without an extra interface type involved.
+// To use this, just inherit (class Mine : public TAutoList<Mine> {)
+template< class T >
+class TAutoList
+{
+public:
+	typedef CUtlVector< T* > AutoListType;
+
+	static AutoListType &GetAutoList()
+	{
+		return m_autolist;
+	}
+
+protected:
+	TAutoList()
+	{
+		m_autolist.AddToTail( static_cast< T* >( this ) );
+	}
+
+	virtual ~TAutoList()
+	{
+		m_autolist.FindAndFastRemove( static_cast< T* >( this ) );
+	}
+
+private:
+	static AutoListType m_autolist;
+};
+
+template< class T >
+CUtlVector< T* > TAutoList< T >::m_autolist;
+
 //-----------------------------------------------------------------------------
 // Holidays
 //-----------------------------------------------------------------------------

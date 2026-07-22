@@ -105,6 +105,7 @@ public:
 	void			Flush( void );
 private:
 	void			RemoveEffect( int effectIndex );
+	void			RemoveEffect( CClientSideEffect *effect );
 	// Current number of effects
 	int				m_nEffects;
 	// Pointers to current effects
@@ -163,6 +164,25 @@ void CEffectsList::AddEffect( CClientSideEffect *effect )
 //-----------------------------------------------------------------------------
 // Purpose: Remove specified effect by index
 // Input  : effectIndex - 
+//-----------------------------------------------------------------------------
+void CEffectsList::RemoveEffect( CClientSideEffect *effect )
+{
+	Assert( effect );
+	CClientSideEffect **end = &m_rgEffects[m_nEffects];
+	for( CClientSideEffect **p = &m_rgEffects[0]; p < end; ++p)
+	{
+		if ( *p == effect )
+		{
+			RemoveEffect( p - &m_rgEffects[0] );
+			return;
+		}
+	}
+
+	Assert( false ); // don't know this effect
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Remove specified effect by index
 //-----------------------------------------------------------------------------
 void CEffectsList::RemoveEffect( int effectIndex )
 {
