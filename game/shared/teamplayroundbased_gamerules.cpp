@@ -36,7 +36,7 @@
 #if defined(TF_CLIENT_DLL) || defined(TF_DLL)
 	#include "tf_gamerules.h"
 	#if defined(TF_CLIENT_DLL) || defined(TF_DLL)
-		#include "tf_lobby.h"
+		#include "tf_lobby_server.h"
 		#ifdef GAME_DLL
 			#include "player_vs_environment/tf_population_manager.h"
 			#include "../server/tf/tf_gc_server.h"
@@ -3482,7 +3482,7 @@ void CTeamplayRoundBasedRules::GetAllPlayersLobbyInfo( CUtlVector<LobbyPlayerInf
 	vecPlayers.RemoveAll();
 
 	// Locate the lobby
-	CTFLobby *pLobby = GTFGCClientSystem()->GetLobby();
+	CTFGSLobby *pLobby = GTFGCClientSystem()->GetLobby();
 	if ( pLobby )
 	{
 		for ( int i = 0 ; i < pLobby->GetNumMembers() ; ++i )

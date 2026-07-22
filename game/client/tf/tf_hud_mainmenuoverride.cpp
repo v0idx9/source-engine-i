@@ -1693,7 +1693,7 @@ void CHudMainMenuOverride::UpdatePromotionalCodes( void )
 		bool bShouldBeVisible = false;
 		if ( steamapicontext && steamapicontext->SteamUser() )
 		{
-			CSteamID steamID = steamapicontext->SteamUser()->GetSteamID();
+			CSteamID steamID = steamapicontext->steamapicontext->SteamUser()->GetSteamID();
 			GCSDK::CGCClientSharedObjectCache *pSOCache = GCClientSystem()->GetSOCache( steamID );
 			if ( pSOCache )
 			{
@@ -1933,7 +1933,7 @@ void CHudMainMenuOverride::OnCommand( const char *command )
 	{
 		if ( steamapicontext && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
 		{
-			CSteamID steamID = steamapicontext->SteamUser()->GetSteamID();
+			CSteamID steamID = steamapicontext->steamapicontext->SteamUser()->GetSteamID();
 			switch ( GetUniverse() )
 			{
 			case k_EUniversePublic: steamapicontext->SteamFriends()->ActivateGameOverlayToWebPage( CFmtStr1024( "http://steamcommunity.com/profiles/%llu/promocodes/tf2", steamID.ConvertToUint64() ) ); break;
@@ -1971,7 +1971,7 @@ void CHudMainMenuOverride::OnCommand( const char *command )
 
 		if ( steamapicontext && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() && steamapicontext->SteamUtils()->IsOverlayEnabled() )
 		{
-			CSteamID steamID = steamapicontext->SteamUser()->GetSteamID();
+			CSteamID steamID = steamapicontext->steamapicontext->SteamUser()->GetSteamID();
 			switch ( GetUniverse() )
 			{
 			case k_EUniversePublic: steamapicontext->SteamFriends()->ActivateGameOverlayToWebPage( "http://www.teamfortress.com/meetyourmatch" ); break;
@@ -1989,7 +1989,7 @@ void CHudMainMenuOverride::OnCommand( const char *command )
 	{
 		if ( steamapicontext && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() && steamapicontext->SteamUtils()->IsOverlayEnabled() )
 		{
-			CSteamID steamID = steamapicontext->SteamUser()->GetSteamID();
+			CSteamID steamID = steamapicontext->steamapicontext->SteamUser()->GetSteamID();
 			switch ( GetUniverse() )
 			{
 			case k_EUniversePublic: steamapicontext->SteamFriends()->ActivateGameOverlayToWebPage( "http://www.teamfortress.com/gargoyles_and_gravel" ); break;
@@ -2045,11 +2045,11 @@ void CHudMainMenuOverride::OnCommand( const char *command )
 
 			if ( bRequireRatingData )
 			{
-				if ( !SteamUser() )
+				if ( !steamapicontext || !steamapicontext->SteamUser() )
 					return;
 
 				EMMRating eRating = pMatchGroup->GetCurrentDisplayRank();
-				CTFRatingData* pRatingData = CTFRatingData::YieldingGetPlayerRatingDataBySteamID( SteamUser()->GetSteamID(), eRating );
+				CTFRatingData* pRatingData = CTFRatingData::YieldingGetPlayerRatingDataBySteamID( steamapicontext->SteamUser()->GetSteamID(), eRating );
 
 				if ( !pRatingData )
 					return;

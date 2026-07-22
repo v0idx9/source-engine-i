@@ -1183,6 +1183,20 @@ const char* UTIL_GetActiveHolidayString()
 //-----------------------------------------------------------------------------
 extern ISoundEmitterSystemBase *soundemitterbase;
 
+EUniverse GetUniverse()
+{
+#ifdef CLIENT_DLL
+	ISteamUtils *pUtils = steamapicontext ? steamapicontext->SteamUtils() : NULL;
+#else
+	ISteamUtils *pUtils = steamgameserverapicontext ? steamgameserverapicontext->SteamGameServerUtils() : NULL;
+#endif
+	if ( !pUtils )
+		return k_EUniverseInvalid;
+
+	static EUniverse steamUniverse = pUtils->GetConnectedUniverse();
+	return steamUniverse;
+}
+
 const char *UTIL_GetRandomSoundFromEntry( const char* pszEntryName )
 {
 	Assert( pszEntryName );

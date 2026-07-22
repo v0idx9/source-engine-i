@@ -600,6 +600,9 @@ int UTIL_StringFieldToInt( const char *szValue, const char **pValueStrings, int 
 // when the entry lists several.
 const char *UTIL_GetRandomSoundFromEntry( const char* pszEntryName );
 
+// The Steam universe this build is talking to; k_EUniverseInvalid offline.
+EUniverse GetUniverse();
+
 //-----------------------------------------------------------------------------
 // Holidays
 //-----------------------------------------------------------------------------

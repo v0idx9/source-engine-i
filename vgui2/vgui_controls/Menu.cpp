@@ -2725,6 +2725,14 @@ MenuItem* MenuBuilder::AddMenuItem( const char *pszButtonText, const char *pszCo
 	return m_pMenu->GetMenuItem( m_pMenu->AddMenuItem( pszButtonText, pszCommand, m_pActionTarget ) );
 }
 
+MenuItem* MenuBuilder::AddMenuItem( const wchar_t *pwszButtonText, const char *pszCommand, const char *pszCategoryName )
+{
+	AddSepratorIfNeeded( pszCategoryName );
+	// Name the item after its command: the wide overload has no ASCII text to
+	// use as a panel name, and the command is unique per item.
+	return m_pMenu->GetMenuItem( m_pMenu->AddMenuItem( pszCommand, pwszButtonText, pszCommand, m_pActionTarget ) );
+}
+
 MenuItem* MenuBuilder::AddMenuItem( const char *pszButtonText, KeyValues *kvUserData, const char *pszCategoryName )
 {
 	AddSepratorIfNeeded( pszCategoryName );

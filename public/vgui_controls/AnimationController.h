@@ -79,6 +79,13 @@ public:
 	void RunAnimationCommand(vgui::Panel *panel, const char *variable, float targetValue, float startDelaySeconds, float durationSeconds, Interpolators_e interpolator, float animParameter = 0 );
 	void RunAnimationCommand(vgui::Panel *panel, const char *variable, Color targetValue, float startDelaySeconds, float durationSeconds, Interpolators_e interpolator, float animParameter = 0 );
 
+	// TF2's UI calls these with two extra flags. bCanBeCancelled is honoured
+	// (the underlying command genuinely supports it). The trailing flag has no
+	// equivalent in this controller and is ignored, so these behave like the
+	// 7-argument forms above -- affects only menu/quest-map animation nuances.
+	void RunAnimationCommand(vgui::Panel *panel, const char *variable, float targetValue, float startDelaySeconds, float durationSeconds, Interpolators_e interpolator, float animParameter, bool bCanBeCancelled, bool bUnusedInThisPort );
+	void RunAnimationCommand(vgui::Panel *panel, const char *variable, Color targetValue, float startDelaySeconds, float durationSeconds, Interpolators_e interpolator, float animParameter, bool bCanBeCancelled, bool bUnusedInThisPort );
+
 private:
 	bool UpdateScreenSize();
 	
