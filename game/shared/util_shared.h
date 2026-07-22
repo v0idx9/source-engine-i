@@ -16,6 +16,7 @@
 #include "networkvar.h"
 #include "engine/IEngineTrace.h"
 #include "steam/steamuniverse.h"
+#include "steam/steamclientpublic.h"
 #include "Color.h"
 #include "engine/IStaticPropMgr.h"
 #include "shared_classnames.h"
@@ -609,6 +610,8 @@ EUniverse GetUniverse();
 Color FloatRGBAToColor( float r, float g, float b, float a );
 float LerpFloat( float x0, float x1, float t );
 Color LerpColor( const Color &c0, const Color &c1, float t );
+
+CSteamID SteamIDFromDecimalString( const char *pszUint64InDecimal );
 
 //-----------------------------------------------------------------------------
 // Holidays

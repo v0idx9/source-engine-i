@@ -215,6 +215,12 @@ public:
 	virtual CSteamID GetConsoleSteamID() = 0;
 #endif
 
+
+	// Added in Steamworks SDK 1.57, newer than the SDK bundled here. TF2's GC
+	// client uses it to authenticate its inventory request. Appended so the
+	// existing vtable offsets are unchanged.
+	virtual HAuthTicket GetAuthTicketForWebApi( const char *pchIdentity ) = 0;
+
 };
 
 #define STEAMUSER_INTERFACE_VERSION "SteamUser018"

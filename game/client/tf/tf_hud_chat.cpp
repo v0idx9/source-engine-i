@@ -39,9 +39,9 @@ void RenderPartyChatMessage( const ChatMessage_t& message,
 							 const Color& colorText )
 {
 	CSteamID localSteamID;
-	if ( SteamUser() )
+	if ( steamapicontext && steamapicontext->SteamUser() )
 	{
-		localSteamID = SteamUser()->GetSteamID();
+		localSteamID = steamapicontext->SteamUser()->GetSteamID();
 	}
 
 	switch ( message.m_eType )

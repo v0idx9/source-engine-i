@@ -676,8 +676,8 @@ void CTFHudMatchStatus::ShowMatchStartDoors()
 		// at the beginning of a match would trigger a rank up if the user wins.
 		if ( bUsesStickyRanks )
 		{
-			auto pRating = CTFRatingData::YieldingGetPlayerRatingDataBySteamID( SteamUser()->GetSteamID(), pMatchDesc->GetCurrentDisplayRating() );
-			auto pRank = CTFRatingData::YieldingGetPlayerRatingDataBySteamID( SteamUser()->GetSteamID(), pMatchDesc->GetCurrentDisplayRank() );
+			auto pRating = CTFRatingData::YieldingGetPlayerRatingDataBySteamID( steamapicontext->SteamUser()->GetSteamID(), pMatchDesc->GetCurrentDisplayRating() );
+			auto pRank = CTFRatingData::YieldingGetPlayerRatingDataBySteamID( steamapicontext->SteamUser()->GetSteamID(), pMatchDesc->GetCurrentDisplayRank() );
 			bool bInPlacement = pMatchDesc->BLocalPlayerIsInPlacement();
 
 			if ( bInPlacement && pMatchDesc->GetNumPlacementMatchesToGo( steamapicontext->SteamUser()->GetSteamID() ) == 1 )

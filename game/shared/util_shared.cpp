@@ -1189,6 +1189,20 @@ const char* UTIL_GetActiveHolidayString()
 //-----------------------------------------------------------------------------
 extern ISoundEmitterSystemBase *soundemitterbase;
 
+CSteamID SteamIDFromDecimalString( const char *pszUint64InDecimal )
+{
+	uint64 ulSteamID = 0;
+	if ( sscanf( pszUint64InDecimal, "%llu", &ulSteamID ) )
+	{
+		return CSteamID( ulSteamID );
+	}
+	else
+	{
+		Assert( false );
+		return CSteamID();
+	}
+}
+
 Color FloatRGBAToColor( float r, float g, float b, float a )
 {
 	return Color(
