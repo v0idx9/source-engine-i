@@ -51,6 +51,9 @@ public:
 
 	// The index should have come from a call to ToInt(). If it hasn't, you're in trouble.
 	static CHandle<T> FromIndex( int index );
+	// Upstream's name for the same thing; the index must have come from a
+	// call to CBaseHandle::ToInt().
+	static CHandle<T> UnsafeFromIndex( int index );
 
 	T*		Get() const;
 	void	Set( const T* pVal );
@@ -99,6 +102,12 @@ inline CHandle<T> CHandle<T>::FromIndex( int index )
 	CHandle<T> ret;
 	ret.m_Index = index;
 	return ret;
+}
+
+template<class T>
+inline CHandle<T> CHandle<T>::UnsafeFromIndex( int index )
+{
+	return FromIndex( index );
 }
 
 
