@@ -36,7 +36,16 @@ static int os_pushresult (lua_State *L, int i, const char *filename) {
 
 
 static int os_execute (lua_State *L) {
+#if defined(IOS) || defined(_IOS)
+  /* iOS marks system() explicitly unavailable - the platform forbids spawning
+     subprocesses at all, so there is nothing to call here. Report failure the
+     way a shell would for a command that could not be run, which keeps any
+     script testing the return value working rather than crashing. */
+  (void)luaL_optstring(L, 1, NULL);
+  lua_pushinteger(L, -1);
+#else
   lua_pushinteger(L, system(luaL_optstring(L, 1, NULL)));
+#endif
   return 1;
 }
 
