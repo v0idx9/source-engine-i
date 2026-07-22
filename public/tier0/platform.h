@@ -492,7 +492,16 @@ typedef void * HINSTANCE;
 #else
 # define DebuggerBreak()  raise(SIGTRAP)
 #endif
+
 #endif
+
+// Marks a parameter or variable as deliberately unused, suppressing the
+// warning without removing the name. TF2's code uses this idiom but the macro
+// is not part of the public SDK.
+#ifndef NoteUnused
+#define NoteUnused( x ) ( (void)( x ) )
+#endif
+
 #define	DebuggerBreakIfDebugging() if ( !Plat_IsInDebugSession() ) ; else DebuggerBreak()
 
 #ifdef STAGING_ONLY
