@@ -244,6 +244,8 @@ public:
 
 	virtual int		GetBonusRoundTime( bool bGameOver = false );
 
+	int				GetRoundsPlayed( void ) { return m_nRoundsPlayed; }
+
 #if defined(TF_CLIENT_DLL) || defined(TF_DLL)
 
 	// Get list of all the players, including those in the lobby but who have
@@ -367,7 +369,6 @@ public:
 	bool PlayThrottledAlert( int iTeam, const char *sound, float fDelayBeforeNext );
 
 	void BroadcastSound( int iTeam, const char *sound, int iAdditionalSoundFlags = 0 );
-	int GetRoundsPlayed( void ) { return m_nRoundsPlayed; }
 
 	virtual void RecalculateControlPointState( void ){ return; }
 
@@ -510,7 +511,6 @@ protected:
 	float						m_flRoundStartTime;		// time the current round started
 	float						m_flNewThrottledAlertTime;		// time that we can play another throttled alert
 
-	int							m_nRoundsPlayed;
 	bool						m_bUseAddScoreAnim;
 
 	gamerules_roundstate_t		m_prevState;
@@ -544,6 +544,7 @@ public:
 
 protected:
 	CNetworkVar( gamerules_roundstate_t, m_iRoundState );
+	CNetworkVar( int, m_nRoundsPlayed );
 	CNetworkVar( bool, m_bInOvertime ); // Are we currently in overtime?
 	CNetworkVar( bool, m_bInSetup ); // Are we currently in setup?
 	CNetworkVar( bool, m_bSwitchedTeamsThisRound );

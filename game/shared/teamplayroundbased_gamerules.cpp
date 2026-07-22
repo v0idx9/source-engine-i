@@ -76,6 +76,7 @@ void RecvProxy_TeamplayRoundState( const CRecvProxyData *pData, void *pStruct, v
 BEGIN_NETWORK_TABLE_NOBASE( CTeamplayRoundBasedRules, DT_TeamplayRoundBasedRules )
 #ifdef CLIENT_DLL
 	RecvPropInt( RECVINFO( m_iRoundState ), 0, RecvProxy_TeamplayRoundState ),
+	RecvPropInt( RECVINFO( m_nRoundsPlayed ) ),
 	RecvPropBool( RECVINFO( m_bInWaitingForPlayers ) ),
 	RecvPropInt( RECVINFO( m_iWinningTeam ) ),
 	RecvPropInt( RECVINFO( m_bInOvertime ) ),
@@ -93,6 +94,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CTeamplayRoundBasedRules, DT_TeamplayRoundBasedRules
 
 #else
 	SendPropInt( SENDINFO( m_iRoundState ), 5 ),
+	SendPropInt( SENDINFO( m_nRoundsPlayed ), 4, SPROP_UNSIGNED ),
 	SendPropBool( SENDINFO( m_bInWaitingForPlayers ) ),
 	SendPropInt( SENDINFO( m_iWinningTeam ), 3, SPROP_UNSIGNED ),
 	SendPropBool( SENDINFO( m_bInOvertime ) ),

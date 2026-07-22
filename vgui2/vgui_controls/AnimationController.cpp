@@ -1373,6 +1373,10 @@ void AnimationController::StartCmd_Animate(UtlSymId_t seqName, AnimCmdAnimate_t 
 //-----------------------------------------------------------------------------
 void AnimationController::StartCmd_Animate(Panel *panel, UtlSymId_t seqName, AnimCmdAnimate_t &cmd, bool bCanBeCancelled)
 {
+	// some panels opt out of being animated entirely
+	if ( panel && !panel->CanAnimate() )
+		return;
+
 	// build a command to add to the animation queue
 	ActiveAnimation_t &anim = m_ActiveAnimations[m_ActiveAnimations.AddToTail()];
 	anim.panel = panel;
