@@ -55,6 +55,8 @@ class SendTable;
 
 #endif
 
+#define DECLARE_NETWORKCLASS_OVERRIDE()	DECLARE_NETWORKCLASS()
+
 #if defined( CLIENT_DLL )
 
 #ifndef NO_ENTITY_PREDICTION
@@ -137,6 +139,8 @@ class SendTable;
 	#define END_PREDICTION_DATA() 
 
 #endif
+
+#define DECLARE_PREDICTABLE_OVERRIDE()	DECLARE_PREDICTABLE()
 
 #if defined( CLIENT_DLL )
 
