@@ -376,6 +376,7 @@ public:
 	const char *Key_BindingForKey( ButtonCode_t code );
 	void StartKeyTrapMode( void );
 	bool CheckDoneKeyTrapping( ButtonCode_t &key );
+	void SetRichPresenceConnect( const char *pchConnect );
 	bool IsInGame( void );
 	bool IsConnected( void );
 	bool IsDrawingLoadingImage( void );
@@ -881,6 +882,12 @@ void CEngineClient::StartKeyTrapMode( void )
 bool CEngineClient::CheckDoneKeyTrapping( ButtonCode_t &code )
 {
 	return Key_CheckDoneTrapping( code );
+}
+
+void CEngineClient::SetRichPresenceConnect( const char *pchConnect )
+{
+	// Rich presence is a Steam client feature; there is no Steam client on the
+	// platforms this fork targets, so there is nothing to publish here.
 }
 
 bool CEngineClient::IsInGame( void )

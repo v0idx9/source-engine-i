@@ -176,6 +176,18 @@ public:
 
 	CUtlVector< CHudElement * >	m_HudList;
 
+public:
+	// Visits every registered HUD element.
+	template < typename F >
+	void ForEachHudElement( F fn )
+	{
+		FOR_EACH_VEC( m_HudList, i )
+		{
+			fn( m_HudList[ i ] );
+		}
+	}
+
+
 private:
 	void						InitFonts();
 

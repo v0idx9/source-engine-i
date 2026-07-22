@@ -11,6 +11,8 @@
 #pragma once
 #endif
 
+#include "inputsystem/InputEnums.h"
+
 class bf_write;
 class bf_read;
 class CUserCmd;
@@ -114,6 +116,11 @@ public:
 	// True when a Steam Controller is driving input; the HUD uses this to
 	// pick between mouse and controller weapon-selection behaviour.
 	virtual bool		IsSteamControllerActive() = 0;
+
+	// Which controller action set the game would like active, and any
+	// modifier flags for it (taunting, etc).
+	virtual void		SetPreferredGameActionSet( GameActionSet_t eActionSet ) = 0;
+	virtual void		SetGameActionSetFlags( GameActionSetFlags_t eFlags ) = 0;
 
 };
 

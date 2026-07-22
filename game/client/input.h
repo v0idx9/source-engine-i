@@ -271,6 +271,10 @@ private:
 	CUtlVector< CEntityGroundContact > m_EntityGroundContact;
 #endif
 	virtual bool IsSteamControllerActive();
+	virtual void SetPreferredGameActionSet( GameActionSet_t eActionSet );
+	virtual void SetGameActionSetFlags( GameActionSetFlags_t eFlags );
+	GameActionSet_t m_PreferredGameActionSet;
+	GameActionSetFlags_t m_GameActionSetFlags;
 
 };
 

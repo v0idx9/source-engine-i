@@ -313,6 +313,27 @@ void CInput::AddKeyButton( const char *name, kbutton_t *pkb )
 //			Delegates to the input system, which returns false on platforms
 //			with no Steam Controller support (iOS included).
 //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Purpose: Records which controller action set the game wants active. With no
+//			Steam Controller support in this fork the request is stored and
+//			handed to the input system, which ignores it on platforms without
+//			one.
+//-----------------------------------------------------------------------------
+void CInput::SetPreferredGameActionSet( GameActionSet_t eActionSet )
+{
+	m_PreferredGameActionSet = eActionSet;
+
+	if ( g_pInputSystem && IsSteamControllerActive() )
+	{
+		g_pInputSystem->ActivateSteamControllerActionSetForSlot( 0, eActionSet );
+	}
+}
+
+void CInput::SetGameActionSetFlags( GameActionSetFlags_t eFlags )
+{
+	m_GameActionSetFlags = eFlags;
+}
+
 bool CInput::IsSteamControllerActive()
 {
 	return g_pInputSystem ? g_pInputSystem->IsSteamControllerActive() : false;
@@ -322,6 +343,8 @@ bool CInput::IsSteamControllerActive()
 //-----------------------------------------------------------------------------
 CInput::CInput( void )
 {
+	m_PreferredGameActionSet = GAME_ACTION_SET_NONE;
+	m_GameActionSetFlags = GAME_ACTION_SET_FLAGS_NONE;
 	m_pCommands = NULL;
 	m_pCameraThirdData = NULL;
 	m_pVerifiedCommands = NULL;

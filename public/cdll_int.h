@@ -575,6 +575,12 @@ public:
 	virtual void DisconnectInternal() = 0;
 
 	virtual int GetInstancesRunningCount( ) = 0;
+
+	// Sets the Steam rich presence "connect" string, used by friends to join.
+	// Appended here rather than in the versioned IVEngineClient013 above so
+	// that interface's vtable layout is unchanged.
+	virtual void				SetRichPresenceConnect( const char *pchConnect ) = 0;
+
 };
 
 
