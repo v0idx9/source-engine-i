@@ -67,6 +67,10 @@
 #include "tf_gamerules.h"
 #endif
 
+#ifdef LUA_SDK
+#include "luamanager.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -282,6 +286,9 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CBaseEntity, DT_BaseEntity )
 	SendPropEHandle (SENDINFO(m_hEffectEntity)),
 	SendPropEHandle (SENDINFO_NAME(m_hMoveParent, moveparent)),
 	SendPropInt		(SENDINFO(m_iParentAttachment), NUM_PARENTATTACHMENT_BITS, SPROP_UNSIGNED),
+#ifdef SBPP
+	SendPropString  (SENDINFO(m_OverrideMaterial)),
+#endif
 
 	SendPropInt		(SENDINFO_NAME( m_MoveType, movetype ), MOVETYPE_MAX_BITS, SPROP_UNSIGNED ),
 	SendPropInt		(SENDINFO_NAME( m_MoveCollide, movecollide ), MOVECOLLIDE_MAX_BITS, SPROP_UNSIGNED ),
@@ -412,6 +419,9 @@ CBaseEntity::CBaseEntity( bool bServerOnly )
 #ifndef _XBOX
 	AddEFlags( EFL_USE_PARTITION_WHEN_NOT_SOLID );
 #endif
+#if defined( LUA_SDK )
+	m_nTableReference = LUA_NOREF;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -466,6 +476,9 @@ CBaseEntity::~CBaseEntity( )
 		// Remove this entity from the ent list (NOTE:  This Makes EHANDLES go NULL)
 		gEntList.RemoveEntity( GetRefEHandle() );
 	}
+#if defined( LUA_SDK )
+	lua_unref( L, m_nTableReference );
+#endif
 }
 
 void CBaseEntity::PostConstructor( const char *szClassname )
@@ -937,12 +950,20 @@ void CBaseEntity::DrawDebugGeometryOverlays(void)
 			NDebugOverlay::EntityBounds(this, 255, 255, 255, 0, 0 );
 		}
 	}
+#ifdef HL2SB
+	if ( m_debugOverlays & OVERLAY_AUTOAIM_BIT && (GetFlags()&FL_AIMTARGET) && AI_GetNearestPlayer( GetAbsOrigin() ) != NULL )
+#else
 	if ( m_debugOverlays & OVERLAY_AUTOAIM_BIT && (GetFlags()&FL_AIMTARGET) && AI_GetSinglePlayer() != NULL )
+#endif
 	{
 		// Crude, but it gets the point across.
 		Vector vecCenter = GetAutoAimCenter();
 		Vector vecRight, vecUp, vecDiag;
+#ifdef HL2SB
+		CBasePlayer *pPlayer = AI_GetNearestPlayer( GetAbsOrigin() );
+#else
 		CBasePlayer *pPlayer = AI_GetSinglePlayer();
+#endif
 		float radius = GetAutoAimRadius();
 
 		QAngle angles = pPlayer->EyeAngles();
@@ -1573,7 +1594,30 @@ int CBaseEntity::VPhysicsTakeDamage( const CTakeDamageInfo &info )
 		if ( gameFlags & FVPHYSICS_PLAYER_HELD )
 		{
 			// if the player is holding the object, use it's real mass (player holding reduced the mass)
+#ifdef HL2SB
+			CBasePlayer *pPlayer = NULL;
+			
+			if ( gpGlobals->maxClients == 1 )
+			{
+				pPlayer = UTIL_GetLocalPlayer();
+			}
+			else
+			{
+				// See which MP player is holding the physics object and then use that player to get the real mass of the object.
+				// This is ugly but better than having linkage between an object and its "holding" player.
+				for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+				{
+					CBasePlayer *tempPlayer = UTIL_PlayerByIndex( i );
+					if ( tempPlayer && (tempPlayer->GetHeldObject() == this ) )
+					{
+						pPlayer = tempPlayer;
+						break;
+					}
+				}
+			}
+#else
 			CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+#endif
 			if ( pPlayer )
 			{
 				float mass = pPlayer->GetHeldObjectMass( VPhysicsGetObject() );
@@ -3597,6 +3641,7 @@ int CBaseEntity::ShouldTransmit( const CCheckTransmitInfo *pInfo )
 	CBasePlayer *pRecipientPlayer = static_cast<CBasePlayer*>( pRecipientEntity );
 
 
+#ifndef SBPP
 	// FIXME: Refactor once notion of "team" is moved into HL2 code
 	// Team rules may tell us that we should
 	if ( pRecipientPlayer->GetTeam() ) 
@@ -3604,7 +3649,8 @@ int CBaseEntity::ShouldTransmit( const CCheckTransmitInfo *pInfo )
 		if ( pRecipientPlayer->GetTeam()->ShouldTransmitToPlayer( pRecipientPlayer, this ))
 			return FL_EDICT_ALWAYS;
 	}
-	
+#endif
+
 
 /*#ifdef INVASION_DLL
 	// Check test network vis distance stuff. Eventually network LOD will do this.
@@ -5068,11 +5114,18 @@ void CC_Ent_Remove( const CCommand& args )
 	// Found one?
 	if ( pEntity )
 	{
+#ifdef SBPP
+		if ( pEntity->IsPlayer() ) return;
+#endif
 		Msg( "Removed %s(%s)\n", STRING(pEntity->m_iClassname), pEntity->GetDebugName() );
 		UTIL_Remove( pEntity );
 	}
 }
+#ifdef SBPP
+static ConCommand ent_remove("ent_remove", CC_Ent_Remove, "Removes the given entity(s)\n\tArguments:   	{entity_name} / {class_name} / no argument picks what player is looking at ", FCVAR_NONE);
+#else
 static ConCommand ent_remove("ent_remove", CC_Ent_Remove, "Removes the given entity(s)\n\tArguments:   	{entity_name} / {class_name} / no argument picks what player is looking at ", FCVAR_CHEAT);
+#endif
 
 //------------------------------------------------------------------------------
 void CC_Ent_RemoveAll( const CCommand& args )
@@ -5093,6 +5146,8 @@ void CC_Ent_RemoveAll( const CCommand& args )
 				  (ent->m_iClassname != NULL_STRING	&& FStrEq(args[1], STRING(ent->m_iClassname))) ||
 				  (ent->GetClassname()!=NULL && FStrEq(args[1], ent->GetClassname())))
 			{
+				if ( ent->IsPlayer() ) return;
+
 				UTIL_Remove( ent );
 				iCount++;
 			}
@@ -5149,12 +5204,19 @@ void CC_Ent_SetName( const CCommand& args )
 		// Found one?
 		if ( pEntity )
 		{
+#ifdef SBPP
+			if ( pEntity->IsPlayer() ) return;
+#endif
 			Msg( "Set the name of %s to %s\n", STRING(pEntity->m_iClassname), args[1] );
 			pEntity->SetName( AllocPooledString( args[1] ) );
 		}
 	}
 }
+#ifdef SBPP
+static ConCommand ent_setname("ent_setname", CC_Ent_SetName, "Sets the targetname of the given entity(s)\n\tArguments:   	{new entity name} {entity_name} / {class_name} / no argument picks what player is looking at ", FCVAR_NONE);
+#else
 static ConCommand ent_setname("ent_setname", CC_Ent_SetName, "Sets the targetname of the given entity(s)\n\tArguments:   	{new entity name} {entity_name} / {class_name} / no argument picks what player is looking at ", FCVAR_CHEAT);
+#endif
 
 //------------------------------------------------------------------------------
 void CC_Find_Ent( const CCommand& args )
@@ -5545,7 +5607,11 @@ private:
 };
 
 static CEntFireAutoCompletionFunctor g_EntFireAutoComplete;
+#ifdef SBPP
+static ConCommand ent_fire("ent_fire", &g_EntFireAutoComplete, "Usage:\n   ent_fire <target> [action] [value] [delay]\n", FCVAR_NONE, &g_EntFireAutoComplete );
+#else
 static ConCommand ent_fire("ent_fire", &g_EntFireAutoComplete, "Usage:\n   ent_fire <target> [action] [value] [delay]\n", FCVAR_CHEAT, &g_EntFireAutoComplete );
+#endif
 
 void CC_Ent_CancelPendingEntFires( const CCommand& args )
 {
@@ -6359,6 +6425,18 @@ void CBaseEntity::AppendContextToCriteria( AI_CriteriaSet& set, const char *pref
 	}
 }
 
+#ifdef SBPP
+void CBaseEntity::SetMaterialOverride( const char *strMaterial )
+{
+	Q_strncpy( m_OverrideMaterial.GetForModify(), strMaterial, MAX_PATH );
+}
+
+const char *CBaseEntity::GetMaterialOverride()
+{
+	return m_OverrideMaterial.Get();
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Removes expired concepts from list
 // Output : 
@@ -6643,7 +6721,11 @@ void CBaseEntity::DispatchResponse( const char *conceptName )
 	ModifyOrAppendCriteria( set );
 
 	// Append local player criteria to set,too
+#ifdef HL2SB
+	CBasePlayer *pPlayer = UTIL_GetNearestPlayer( GetAbsOrigin() );
+#else
 	CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+#endif
 	if( pPlayer )
 		pPlayer->ModifyOrAppendPlayerCriteria( set );
 
@@ -6709,7 +6791,11 @@ void CBaseEntity::DumpResponseCriteria( void )
 	ModifyOrAppendCriteria( set );
 
 	// Append local player criteria to set,too
+#ifdef HL2SB
+	CBasePlayer *pPlayer = UTIL_GetNearestPlayer( GetAbsOrigin() );
+#else
 	CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+#endif
 	if ( pPlayer )
 	{
 		pPlayer->ModifyOrAppendPlayerCriteria( set );
@@ -7194,7 +7280,11 @@ bool CBaseEntity::SUB_AllowedToFade( void )
 
 	// on Xbox, allow these to fade out
 #ifndef _XBOX
+#ifdef HL2SB
+	CBasePlayer *pPlayer = UTIL_GetNearestPlayer( GetAbsOrigin() );
+#else
 	CBasePlayer *pPlayer = ( AI_IsSinglePlayer() ) ? UTIL_GetLocalPlayer() : NULL;
+#endif
 
 	if ( pPlayer && pPlayer->FInViewCone( this ) )
 		return false;
@@ -7348,6 +7438,12 @@ void CC_Ent_Create( const CCommand& args )
 			const char *pValue = args[i+1];
 			entity->KeyValue( pKeyName, pValue );
 		}
+#ifdef SBPP
+		ConVarRef npcEquipVar("npc_create_equipment");
+		const char *equipValue = npcEquipVar.IsValid() ? npcEquipVar.GetString() : nullptr;
+		if (equipValue && equipValue[0] != '\0')
+			entity->KeyValue("additionalequipment", equipValue);
+#endif
 
 		DispatchSpawn(entity);
 
@@ -7370,7 +7466,11 @@ void CC_Ent_Create( const CCommand& args )
 	}
 	CBaseEntity::SetAllowPrecache( allowPrecache );
 }
+#ifdef SBPP
+static ConCommand ent_create("ent_create", CC_Ent_Create, "Creates an entity of the given type where the player is looking.  Additional parameters can be passed in in the form: ent_create <entity name> <param 1 name> <param 1> <param 2 name> <param 2>...<param N name> <param N>", FCVAR_GAMEDLL );
+#else
 static ConCommand ent_create("ent_create", CC_Ent_Create, "Creates an entity of the given type where the player is looking.  Additional parameters can be passed in in the form: ent_create <entity name> <param 1 name> <param 1> <param 2 name> <param 2>...<param N name> <param N>", FCVAR_GAMEDLL | FCVAR_CHEAT);
+#endif
 
 //------------------------------------------------------------------------------
 // Purpose: Teleport a specified entity to where the player is looking

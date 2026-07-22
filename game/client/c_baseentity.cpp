@@ -40,6 +40,10 @@
 #include "cdll_bounded_cvars.h"
 #include "inetchannelinfo.h"
 #include "proto_version.h"
+#ifdef LUA_SDK
+#include "luamanager.h"
+#include "mathlib/lvector.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -74,7 +78,7 @@ void cc_cl_interp_all_changed( IConVar *pConVar, const char *pOldString, float f
 
 
 static ConVar  cl_extrapolate( "cl_extrapolate", "1", FCVAR_CHEAT, "Enable/disable extrapolation if interpolation history runs out." );
-static ConVar  cl_interp_npcs( "cl_interp_npcs", "0.0", FCVAR_USERINFO, "Interpolate NPC positions starting this many seconds in past (or cl_interp, if greater)" );  
+static ConVar  cl_interp_npcs( "cl_interp_npcs", "0.25", FCVAR_USERINFO, "Interpolate NPC positions starting this many seconds in past (or cl_interp, if greater)" );  
 static ConVar  cl_interp_all( "cl_interp_all", "0", 0, "Disable interpolation list optimizations.", 0, 0, 0, 0, cc_cl_interp_all_changed );
 ConVar  r_drawmodeldecals( "r_drawmodeldecals", "1" );
 extern ConVar	cl_showerror;
@@ -460,6 +464,10 @@ BEGIN_RECV_TABLE_NOBASE(C_BaseEntity, DT_BaseEntity)
 	RecvPropInt( RECVINFO_NAME(m_hNetworkMoveParent, moveparent), 0, RecvProxy_IntToMoveParent ),
 	RecvPropInt( RECVINFO( m_iParentAttachment ) ),
 
+#ifdef SBPP
+	RecvPropString( RECVINFO( m_OverrideMaterial )),
+#endif
+	
 	RecvPropInt( "movetype", 0, SIZEOF_IGNORE, 0, RecvProxy_MoveType ),
 	RecvPropInt( "movecollide", 0, SIZEOF_IGNORE, 0, RecvProxy_MoveCollide ),
 	RecvPropDataTable( RECVINFO_DT( m_Collision ), 0, &REFERENCE_RECV_TABLE(DT_CollisionProperty) ),
@@ -1084,6 +1092,28 @@ bool C_BaseEntity::Init( int entnum, int iSerialNum )
 
 	index = entnum;
 
+	if ( this->IsPlayer() )
+	{
+		// Josh: If we ever have a player that could ever cause us
+		// an out of bounds access to any player sized arrays.
+		// Just get out now!
+		//
+		// All these issues should be bounds checked now anyway,
+		// but I'd much rather be safe than sorry here.
+		//
+		// Additionally, make sure we aren't 0 or negative,
+		// the player CANNOT be worldspawn.
+		// Someone is going to try that to get an extra player and frog something up!
+		// 
+		// Player index is entindex - 1.
+		// MAX_PLAYERS_ARRAY_SAFE is MAX_PLAYERS + 1.
+		if ( index <= 0 || index >= MAX_PLAYERS_ARRAY_SAFE )
+		{
+			Warning("Player with out of bounds entindex! Got: %d Expected to be in inclusive range: %d - %d\n", index, 1, MAX_PLAYERS );
+			return false;
+		}
+	}
+
 	cl_entitylist->AddNetworkableEntity( GetIClientUnknown(), entnum, iSerialNum );
 
 	CollisionProp()->CreatePartitionHandle();
@@ -1631,11 +1661,41 @@ int C_BaseEntity::GetSoundSourceIndex() const
 //-----------------------------------------------------------------------------
 const Vector& C_BaseEntity::GetRenderOrigin( void )
 {
+#if 0
+	if ( m_nTableReference != LUA_NOREF )
+	{
+		lua_getref( L, m_nTableReference );
+		lua_getfield( L, -1, "m_vecRenderOrigin" );
+		lua_remove( L, -2 );
+		if ( lua_isuserdata( L, -1 ) && luaL_checkudata( L, -1, "Vector" ) != NULL )
+		{
+			const Vector& res = luaL_checkvector( L, -1 );
+			lua_pop( L, 1 );
+			return res;
+		}
+		lua_pop( L, 1 );
+	}
+#endif	
 	return GetAbsOrigin();
 }
 
 const QAngle& C_BaseEntity::GetRenderAngles( void )
 {
+#if 0
+	if ( m_nTableReference != LUA_NOREF )
+	{
+		lua_getref( L, m_nTableReference );
+		lua_getfield( L, -1, "m_angRenderAngles" );
+		lua_remove( L, -2 );
+		if ( lua_isuserdata( L, -1 ) && luaL_checkudata( L, -1, "QAngle" ) != NULL )
+		{
+			const QAngle& res = luaL_checkangle( L, -1 );
+			lua_pop( L, 1 );
+			return res;
+		}
+		lua_pop( L, 1 );
+	}
+#endif	
 	return GetAbsAngles();
 }
 
@@ -2046,6 +2106,20 @@ void C_BaseEntity::UpdatePartitionListEntry()
 	partition->RemoveAndInsert( PARTITION_CLIENT_SOLID_EDICTS | PARTITION_CLIENT_RESPONSIVE_EDICTS | PARTITION_CLIENT_NON_STATIC_EDICTS, list, CollisionProp()->GetPartitionHandle() );
 }
 
+#ifdef SBPP
+void C_BaseEntity::SetMaterialOverride( const char *strMaterial )
+{
+	if ( strMaterial == NULL )
+		Q_memset( m_OverrideMaterial, 0, sizeof( m_OverrideMaterial ) );
+	else
+		Q_strncpy( m_OverrideMaterial, strMaterial, sizeof( m_OverrideMaterial ) );
+}
+
+const char *C_BaseEntity::GetMaterialOverride()
+{
+	return m_OverrideMaterial;
+}
+#endif
 
 void C_BaseEntity::NotifyShouldTransmit( ShouldTransmitState_t state )
 {
@@ -2741,6 +2815,8 @@ void C_BaseEntity::OnStoreLastNetworkedValue()
 	{
 		VarMapEntry_t *e = &m_VarMap.m_Entries[ i ];
 		IInterpolatedVar *watcher = e->watcher;
+		if (!watcher)
+			continue;
 
 		int type = watcher->GetType();
 
@@ -2776,6 +2852,10 @@ void C_BaseEntity::OnLatchInterpolatedVariables( int flags )
 	{
 		VarMapEntry_t *e = &m_VarMap.m_Entries[ i ];
 		IInterpolatedVar *watcher = e->watcher;
+#ifdef SBPP
+		if ( !watcher )
+			continue;
+#endif
 
 		int type = watcher->GetType();
 
@@ -3960,7 +4040,10 @@ void C_BaseEntity::RemoveFromLeafSystem()
 	// Detach from the leaf lists.
 	if( m_hRender != INVALID_CLIENT_RENDER_HANDLE )
 	{
-		ClientLeafSystem()->RemoveRenderable( m_hRender );
+#ifdef SBPP
+		if (ClientLeafSystem())
+#endif
+			ClientLeafSystem()->RemoveRenderable( m_hRender );
 		m_hRender = INVALID_CLIENT_RENDER_HANDLE;
 	}
 	DestroyShadow();
@@ -4758,6 +4841,13 @@ const char *C_BaseEntity::GetClassname( void )
 	static char outstr[ 256 ];
 	outstr[ 0 ] = 0;
 	bool gotname = false;
+#if defined ( LUA_SDK )
+	if ( m_iClassname && m_iClassname[ 0 ] )
+	{
+		Q_snprintf( outstr, sizeof( outstr ), "%s", m_iClassname );
+		gotname = true;
+	}
+#endif
 #ifndef NO_ENTITY_PREDICTION
 	if ( GetPredDescMap() )
 	{
@@ -5836,7 +5926,11 @@ void C_BaseEntity::Interp_Reset( VarMapping_t *map )
 		VarMapEntry_t *e = &map->m_Entries[ i ];
 		IInterpolatedVar *watcher = e->watcher;
 
-		watcher->Reset();
+		// ez
+		if (watcher)
+			watcher->Reset();
+		else
+			break;
 	}
 }
 

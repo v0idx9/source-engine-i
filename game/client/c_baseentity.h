@@ -814,6 +814,7 @@ public:
 	bool							PostNetworkDataReceived( int commands_acknowledged );
 	bool							GetPredictionEligible( void ) const;
 	void							SetPredictionEligible( bool canpredict );
+	virtual bool					PredictionErrorShouldResetLatchedForAllPredictables( void ) { return true; } //legacy behavior is that any prediction error causes all predictables to reset latched
 
 	enum
 	{
@@ -1544,7 +1545,9 @@ private:
 	unsigned char					m_MoveCollide;
 	unsigned char					m_iParentAttachment; // 0 if we're relative to the parent's absorigin and absangles.
 	unsigned char					m_iOldParentAttachment;
-
+#ifdef SBPP
+	char                            m_OverrideMaterial[ MAX_PATH ];
+#endif
 	unsigned char					m_nWaterLevel;
 	unsigned char					m_nWaterType;
 	// For client/server entities, true if the entity goes outside the PVS.
@@ -1660,6 +1663,15 @@ public:
 	float							m_fRenderingClipPlane[4]; //world space clip plane when drawing
 	bool							m_bEnableRenderingClipPlane; //true to use the custom clip plane when drawing
 	float *							GetRenderClipPlane( void ); // Rendering clip plane, should be 4 floats, return value of NULL indicates a disabled render clip plane
+
+#ifdef LUA_SDK
+	int								m_nTableReference;
+	virtual bool					IsWeapon( void ) const { return false; }
+#endif
+#ifdef SBPP
+	virtual void SetMaterialOverride( const char* strMaterial );
+	virtual const char* GetMaterialOverride();
+#endif
 
 protected:
 

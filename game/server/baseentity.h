@@ -120,6 +120,18 @@ enum Class_T
 	CLASS_EARTH_FAUNA,
 	CLASS_HACKED_ROLLERMINE,
 	CLASS_COMBINE_HUNTER,
+#ifdef SBPP
+	CLASS_MACHINE,
+	CLASS_HUMAN_PASSIVE,
+	CLASS_HUMAN_MILITARY,
+	CLASS_ALIEN_MILITARY,
+	CLASS_ALIEN_MONSTER,
+	CLASS_ALIEN_PREY,
+	CLASS_ALIEN_PREDATOR,
+	CLASS_INSECT,
+	CLASS_PLAYER_BIOWEAPON,
+	CLASS_ALIEN_BIOWEAPON,
+#endif
 
 	NUM_AI_CLASSES
 };
@@ -823,6 +835,18 @@ public:
 
 	// used so we know when things are no longer touching
 	int			touchStamp;			
+
+#if defined( LUA_SDK )
+	// Andrew; This is used to determine an entity's reference in Lua's LUA_REGISTRYINDEX.
+	// I'd rather do this than create a struct and pass that to each bounded function, plus it'll save some perf for massive executions, like Think funcs.
+	int				m_nTableReference;
+	// Henry; There's an IsPlayer and IsWorld and such, why not an IsWeapon?
+	virtual bool	IsWeapon( void ) const { return false; }
+#endif
+#ifdef SBPP
+	virtual void SetMaterialOverride(const char *);
+	virtual const char *GetMaterialOverride();
+#endif
 
 protected:
 
@@ -1631,6 +1655,9 @@ protected:
 
 	// FIXME: Make this private! Still too many references to do so...
 	CNetworkVar( int, m_spawnflags );
+#ifdef SBPP
+	CNetworkString( m_OverrideMaterial, MAX_PATH );
+#endif
 
 private:
 	int		m_iEFlags;	// entity flags EFL_*

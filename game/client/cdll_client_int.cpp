@@ -162,6 +162,14 @@ extern vgui::IInputInternal *g_InputInternal;
 // HPE_END
 //=============================================================================
 
+#ifdef LUA_SDK
+#include "luamanager.h"
+#include "luacachefile.h"
+#include "mountaddons.h"
+#ifdef SBPP
+#include "lnet_shared.h"
+#endif
+#endif
 
 #ifdef PORTAL
 #include "PortalRender.h"
@@ -169,6 +177,21 @@ extern vgui::IInputInternal *g_InputInternal;
 
 #ifdef SIXENSE
 #include "sixense/in_sixense.h"
+#endif
+
+#ifdef SBPP
+#include "sbpp/dynamicsky.h"
+#include "sbpp/gameui/loading.h"
+#include "sbpp/mount.h"
+#include "sbpp/webmanager.h"
+#include "sbpp/id.h"
+
+#ifdef _WIN32
+#undef MessageBox
+#undef CreateEvent
+
+#pragma comment(lib, "Normaliz.lib")
+#endif
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -215,6 +238,9 @@ IReplayPerformanceController *g_pReplayPerformanceController = NULL;
 IEngineReplay *g_pEngineReplay = NULL;
 IEngineClientReplay *g_pEngineClientReplay = NULL;
 IReplaySystem *g_pReplay = NULL;
+#endif
+#ifdef SBPP
+CWebManager *g_pWebManager = NULL;
 #endif
 
 IHaptics* haptics = NULL;// NVNT haptics system interface singleton
@@ -288,6 +314,14 @@ CGlobalVarsBase *gpGlobals = &dummyvars;
 class CHudChat;
 class CViewRender;
 extern CViewRender g_DefaultViewRender;
+
+#ifdef SBPP
+void SvSkyChangeCallback(IConVar* cvar, const char*, float)
+{
+	R_UnloadSkys();
+	R_LoadSkys();
+}
+#endif
 
 extern void StopAllRumbleEffects( void );
 
@@ -481,6 +515,24 @@ public:
 	virtual void GetPlayerTextColor(int entindex, int color[3])
 	{
 		color[0] = color[1] = color[2] = 128;
+
+#if defined ( LUA_SDK )
+		BEGIN_LUA_CALL_HOOK( "GetPlayerTextColor" );
+			lua_pushinteger( L, entindex );
+			lua_pushinteger( L, color[0] );
+			lua_pushinteger( L, color[1] );
+			lua_pushinteger( L, color[2] );
+		END_LUA_CALL_HOOK( 4, 3 );
+
+		if ( lua_isnumber( L, -3 ) )
+			color[2] = (int)lua_tointeger( L, -3 );
+		if ( lua_isnumber( L, -2 ) )
+			color[1] = (int)lua_tointeger( L, -2 );
+		if ( lua_isnumber( L, -1 ) )
+			color[0] = (int)lua_tointeger( L, -1 );
+
+		lua_pop( L, 3 );
+#endif
 	}
 
 	virtual void UpdateCursorState()
@@ -489,6 +541,13 @@ public:
 
 	virtual bool			CanShowSpeakerLabels()
 	{
+#if defined ( LUA_SDK )
+		BEGIN_LUA_CALL_HOOK( "CanShowSpeakerLabels" );
+		END_LUA_CALL_HOOK( 0, 1 );
+
+		RETURN_LUA_BOOLEAN();
+#endif
+
 		return true;
 	}
 };
@@ -848,10 +907,12 @@ CHLClient::CHLClient()
 
 extern IGameSystem *ViewportClientSystem();
 
-
 //-----------------------------------------------------------------------------
 ISourceVirtualReality *g_pSourceVR = NULL;
 
+#ifdef SBPP
+void SwapMapCommand();
+#endif
 // Purpose: Called when the DLL is first loaded.
 // Input  : engineFactory - 
 // Output : int
@@ -950,6 +1011,12 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	InitFbx();
 #endif
 
+#ifdef SBPP
+	loadMount();
+#endif
+#ifdef LUA_SDK
+	MountAddons();
+#endif
 	// it's ok if this is NULL. That just means the sourcevr.dll wasn't found
 	g_pSourceVR = (ISourceVirtualReality *)appSystemFactory(SOURCE_VIRTUAL_REALITY_INTERFACE_VERSION, NULL);
 
@@ -995,6 +1062,28 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		return false;
 
 	vgui::VGui_InitMatSysInterfacesList( "ClientDLL", &appSystemFactory, 1 );
+#ifdef SBPP
+	g_pWebManager = new CWebManager();
+
+	CLoadingScreen* loading = new CLoadingScreen();
+	loading->Initialize();
+
+	loading->UpdateState("Start", 0.1f);
+#endif
+#if defined ( LUA_SDK )
+	// Initialize the GameUI state
+	luasrc_init_gameui();
+
+	luasrc_dofolder( LGameUI, LUA_PATH_GAMEUI );
+#ifdef SBPP
+	luasrc_dofile_vfs( LGameUI, "lua/handmodels/_00_handmodel.lua" ); // hackhack: register handmodels table first..
+	luasrc_dofolder( LGameUI, LUA_PATH_HANDMODELS );
+	luasrc_dofile_vfs( LGameUI, "lua/palm/cl_init.lua" );
+#endif
+#endif
+#ifdef SBPP
+	loading->UpdateState("Load Lua", 0.3f);
+#endif
 
 	// Add the client systems.	
 	
@@ -1017,6 +1106,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	IGameSystem::Add( CustomTextureToolCacheGameSystem() );
 	IGameSystem::Add( TFSharedContentManager() );
 	#endif
+
+#ifdef SBPP
+	loading->UpdateState("Initialise Game Systems", 0.5f);
+#endif
 
 #if defined( TF_CLIENT_DLL )
 	if ( g_AbuseReportMgr != NULL )
@@ -1050,6 +1143,9 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 
 	view->Init();
 	vieweffects->Init();
+#ifdef SBPP
+	loading->UpdateState("Finished!", 0.9f);
+#endif
 
 	C_BaseTempEntity::PrecacheTempEnts();
 
@@ -1087,6 +1183,14 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 #endif
 #ifndef _X360
 	HookHapticMessages(); // Always hook the messages
+#endif
+#ifdef SBPP
+	static ConVar* skyname = cvar->FindVar( "sv_skyname" );
+	if ( skyname )
+		skyname->InstallChangeCallback( SvSkyChangeCallback );
+#endif
+#ifdef SBPP
+	loading->Shutdown();
 #endif
 
 	return true;
@@ -1127,6 +1231,26 @@ bool CHLClient::ReplayPostInit()
 #endif
 }
 
+#ifdef SBPP
+//-----------------------------------------------------------------------------
+// Purpose: version checking
+//-----------------------------------------------------------------------------
+const char* GetModVersion()
+{
+	KeyValues* gameInfo = new KeyValues( "Version" );
+	if( gameInfo->LoadFromFile( filesystem, "scripts/version.txt", "MOD" ) )
+	{
+		const char* gameTitle = gameInfo->GetString( "index", "Unknown" );
+		return gameTitle;
+	}
+	else
+	{
+		return "Unknown";
+	}
+}
+#endif
+
+
 //-----------------------------------------------------------------------------
 // Purpose: Called after client & server DLL are loaded and all systems initialized
 //-----------------------------------------------------------------------------
@@ -1141,6 +1265,38 @@ void CHLClient::PostInit()
 
 	g_ClientVirtualReality.StartupComplete();
 
+#ifdef SBPP
+	// protect
+	KeyValues *gameInfo = new KeyValues( "GameInfo" );
+	const char *baseTitle = "Half-Life 2: Sandbox++";
+	const char *theTitle = "";
+
+	if ( gameInfo->LoadFromFile( filesystem, "gameinfo.txt", "MOD" ) )
+		theTitle = gameInfo->GetString( "game", "Unknown" );
+
+	Msg(
+		"==========\n"
+		"Half-Life 2: Sandbox++\n"
+		"Created by Team HL2SB++\n\n"
+		"User ID: %s\n"
+		"==========\n",
+
+		CUserID::Get().GetID()
+	);
+
+	if ( Q_strcmp( theTitle, baseTitle ) != 0 )
+	{
+        Error(
+           	"Hey. Stealing is bad.\n"
+            "If you're a normal user getting this error, check how you installed your addons or where you got HL2:SB++ from.\n"
+            "If you intentionally removed the credits to claim ownership, just know that I have my eyes upon you and this will NOT go unnoticed.\n\n"
+            "Yours sincerely, Team HL2:SB++. https://discord.gg/3DkET6fqXr\n"
+        );
+	}
+	// protect end
+
+	SwapMapCommand();
+#endif
 #ifdef HL1MP_CLIENT_DLL
 	if ( s_cl_load_hl1_content.GetBool() && steamapicontext && steamapicontext->SteamApps() )
 	{
@@ -1172,6 +1328,14 @@ void CHLClient::Shutdown( void )
 	g_pSixenseInput->Shutdown();
 	delete g_pSixenseInput;
 	g_pSixenseInput = NULL;
+#endif
+#ifdef SBPP
+	g_pWebManager->Shutdown();
+#endif
+#ifdef LUA_SDK
+	UnMountAddons();
+
+	luasrc_shutdown_gameui();
 #endif
 
 	C_BaseAnimating::ShutdownBoneSetupThreadPool();
@@ -1576,6 +1740,51 @@ void CHLClient::LevelInitPreEntity( char const* pMapName )
 	if (g_bLevelInitialized)
 		return;
 	g_bLevelInitialized = true;
+#if defined ( LUA_SDK )	
+	lcf_recursivedeletefile( LUA_PATH_CACHE );
+
+	// Add the Lua environment.
+	// Andrew; unarchive the Lua Cache File
+	if ( gpGlobals->maxClients > 1 )
+	{
+		luasrc_ExtractLcf();
+	}
+
+	luasrc_init();
+
+	if ( gpGlobals->maxClients > 1 )
+	{
+		luasrc_dofolder( L, LUA_PATH_CACHE LUA_PATH_EXTENSIONS );
+		luasrc_dofolder( L, LUA_PATH_CACHE LUA_PATH_MODULES );
+		luasrc_dofolder( L, LUA_PATH_CACHE LUA_PATH_GAME_SHARED );
+		luasrc_dofolder( L, LUA_PATH_CACHE LUA_PATH_GAME_CLIENT );
+	}
+
+	luasrc_dofolder( L, LUA_PATH_EXTENSIONS );
+	luasrc_dofolder( L, LUA_PATH_MODULES );
+	luasrc_dofolder( L, LUA_PATH_GAME_SHARED );
+	luasrc_dofolder( L, LUA_PATH_GAME_CLIENT );
+	luasrc_dofolder( L, LUA_PATH_AUTORUN );
+
+	luasrc_LoadWeapons();
+	luasrc_LoadEntities();
+	//luasrc_LoadEffects();
+
+	//Andrew; loadup base gamemode.
+	luasrc_LoadGamemode( LUA_BASE_GAMEMODE );
+
+	luasrc_LoadGamemode( gamemode.GetString() );
+	luasrc_SetGamemode( gamemode.GetString() );
+
+	BEGIN_LUA_CALL_HOOK( "LevelInitPreEntity" );
+		lua_pushstring( L, pMapName );
+	END_LUA_CALL_HOOK( 1, 0 );
+
+#ifdef SBPP
+	extern void LuaNet_ClientInit();
+	LuaNet_ClientInit();
+#endif
+#endif
 
 	input->LevelInit();
 
@@ -1633,6 +1842,11 @@ void CHLClient::LevelInitPreEntity( char const* pMapName )
 	gHUD.LevelInit();
 	gTouch.LevelInit();
 
+#ifdef SBPP
+	R_UnloadSkys();
+	R_LoadSkys();
+#endif
+
 #if defined( REPLAY_ENABLED )
 	// Initialize replay ragdoll recorder
 	if ( !engine->IsPlayingDemo() )
@@ -1648,6 +1862,10 @@ void CHLClient::LevelInitPreEntity( char const* pMapName )
 //-----------------------------------------------------------------------------
 void CHLClient::LevelInitPostEntity( )
 {
+#if defined ( LUA_SDK )
+	BEGIN_LUA_CALL_HOOK( "LevelInitPostEntity" );
+	END_LUA_CALL_HOOK( 0, 0 );
+#endif
 	IGameSystem::LevelInitPostEntityAllSystems();
 	C_PhysPropClientside::RecreateAll();
 	internalCenterPrint->Clear();
@@ -1682,6 +1900,13 @@ void CHLClient::LevelShutdown( void )
 		return;
 
 	g_bLevelInitialized = false;
+#if defined ( LUA_SDK )
+	if (g_bLuaInitialized)
+	{
+		BEGIN_LUA_CALL_HOOK( "LevelShutdown" );
+		END_LUA_CALL_HOOK( 0, 0 );
+	}
+#endif
 
 	// Disable abs recomputations when everything is shutting down
 	CBaseEntity::EnableAbsRecomputations( false );
@@ -1741,6 +1966,9 @@ void CHLClient::LevelShutdown( void )
 	// Shutdown the ragdoll recorder
 	CReplayRagdollRecorder::Instance().Shutdown();
 	CReplayRagdollCache::Instance().Shutdown();
+#endif
+#if defined( LUA_SDK )
+	luasrc_shutdown();
 #endif
 }
 
