@@ -16,6 +16,7 @@
 #include "networkvar.h"
 #include "engine/IEngineTrace.h"
 #include "steam/steamuniverse.h"
+#include "Color.h"
 #include "engine/IStaticPropMgr.h"
 #include "shared_classnames.h"
 
@@ -603,6 +604,11 @@ const char *UTIL_GetRandomSoundFromEntry( const char* pszEntryName );
 
 // The Steam universe this build is talking to; k_EUniverseInvalid offline.
 EUniverse GetUniverse();
+
+// Clamp and round float vals to int. The values are in the 0...255 range.
+Color FloatRGBAToColor( float r, float g, float b, float a );
+float LerpFloat( float x0, float x1, float t );
+Color LerpColor( const Color &c0, const Color &c1, float t );
 
 //-----------------------------------------------------------------------------
 // Holidays

@@ -1189,6 +1189,33 @@ const char* UTIL_GetActiveHolidayString()
 //-----------------------------------------------------------------------------
 extern ISoundEmitterSystemBase *soundemitterbase;
 
+Color FloatRGBAToColor( float r, float g, float b, float a )
+{
+	return Color(
+		(unsigned char)clamp( r + 0.5f, 0.0f, 255.0f ),
+		(unsigned char)clamp( g + 0.5f, 0.0f, 255.0f ),
+		(unsigned char)clamp( b + 0.5f, 0.0f, 255.0f ),
+		(unsigned char)clamp( a + 0.5f, 0.0f, 255.0f )
+	);
+}
+
+float LerpFloat( float x0, float x1, float t )
+{
+	return x0 + (x1 - x0) * t;
+}
+
+Color LerpColor( const Color &c0, const Color &c1, float t )
+{
+	if ( t <= 0.0f ) return c0;
+	if ( t >= 1.0f ) return c1;
+	return FloatRGBAToColor(
+		LerpFloat( (float)c0.r(), (float)c1.r(), t ),
+		LerpFloat( (float)c0.g(), (float)c1.g(), t ),
+		LerpFloat( (float)c0.b(), (float)c1.b(), t ),
+		LerpFloat( (float)c0.a(), (float)c1.a(), t )
+	);
+}
+
 EUniverse GetUniverse()
 {
 #ifdef CLIENT_DLL

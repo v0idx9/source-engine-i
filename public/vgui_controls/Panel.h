@@ -256,6 +256,9 @@ public:
 
 	// install a mouse handler
 	virtual void InstallMouseHandler( Panel *pHandler );	// mouse events will be send to handler panel instead of this panel
+	// TF2 passes two extra flags here. They have no equivalent in this vgui,
+	// so they are ignored and this behaves as the single-argument form.
+	void InstallMouseHandler( Panel *pHandler, bool, bool ) { InstallMouseHandler( pHandler ); }
 
 	// drawing state
 	virtual void   SetEnabled(bool state);
