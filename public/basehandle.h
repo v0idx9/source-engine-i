@@ -33,6 +33,10 @@ public:
 	CBaseHandle( uintp value );
 	CBaseHandle( int iEntry, int iSerialNumber );
 
+	// Builds a handle straight from a raw index. The index must have come
+	// from a call to ToInt(); nothing else is a valid input.
+	static CBaseHandle UnsafeFromIndex( int index );
+
 	void Init( int iEntry, int iSerialNumber );
 	void Term();
 
@@ -88,6 +92,13 @@ inline CBaseHandle::CBaseHandle( uintp value )
 inline CBaseHandle::CBaseHandle( int iEntry, int iSerialNumber )
 {
 	Init( iEntry, iSerialNumber );
+}
+
+inline CBaseHandle CBaseHandle::UnsafeFromIndex( int index )
+{
+	CBaseHandle ret;
+	ret.m_Index = index;
+	return ret;
 }
 
 inline void CBaseHandle::Init( int iEntry, int iSerialNumber )
