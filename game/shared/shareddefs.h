@@ -246,6 +246,14 @@ enum CastVote
 // Arrays indexed by entindex need one extra slot: entity indices are 1-based.
 #define MAX_PLAYERS_ARRAY_SAFE		( MAX_PLAYERS + 1 )
 
+inline bool IsIndexIntoPlayerArrayValid( int iIndex )
+{
+	if ( iIndex < 0 || iIndex >= MAX_PLAYERS_ARRAY_SAFE )
+		return false;
+
+	return true;
+}
+
 #define MAX_PLACE_NAME_LENGTH		18
 
 #define MAX_FOV						110

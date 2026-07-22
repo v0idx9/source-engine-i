@@ -365,8 +365,11 @@ void CParticleProperty::StopParticlesInvolving( CBaseEntity *pEntity )
 // Purpose: Stop all effects that were created using the given definition
 //			name.
 //-----------------------------------------------------------------------------
-void CParticleProperty::StopParticlesNamed( const char *pszEffectName, bool bForceRemoveInstantly /* =false */ )
+void CParticleProperty::StopParticlesNamed( const char *pszEffectName, bool bForceRemoveInstantly /* =false */, bool bInverse /* = false */ )
 {
+	if ( !pszEffectName || !pszEffectName[0] )
+		return;
+
 	CParticleSystemDefinition *pDef = g_pParticleSystemMgr->FindParticleSystem( pszEffectName );
 	AssertMsg1(pDef, "Could not find particle definition %s", pszEffectName );
 	if (!pDef)
@@ -384,7 +387,8 @@ void CParticleProperty::StopParticlesNamed( const char *pszEffectName, bool bFor
 	{
 		// for each effect...
 		CNewParticleEffect *pParticleEffect = m_ParticleEffects[i].pParticleEffect.GetObject();
-		if (pParticleEffect->m_pDef() == pDef)
+		bool bMatches = pParticleEffect->m_pDef() == pDef;
+		if ( bMatches == !bInverse )
 		{
 			pParticleEffect->StopEmission( false, bRemoveInstantly );
 		}
