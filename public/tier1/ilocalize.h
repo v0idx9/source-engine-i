@@ -168,6 +168,9 @@ private:
 	#define loc_scpy_safe	V_strcpy_safe
 	#define loc_strlen		Q_strlen
 	#define LOCCHAR( x )	x
+	// printf specifier for a locchar_t string, for building format strings by
+	// literal concatenation.
+	#define LOCCHAR_FMT_LOCPRINTF	"%s"
 
 #else
 
@@ -181,6 +184,9 @@ private:
 	#define loc_scpy_safe	V_wcscpy_safe
 	#define loc_strlen		Q_wcslen
 	#define LOCCHAR(x)		L ## x
+	// printf specifier for a locchar_t string, for building format strings by
+	// literal concatenation.
+	#define LOCCHAR_FMT_LOCPRINTF	L"%ls"
 
 #endif
 
