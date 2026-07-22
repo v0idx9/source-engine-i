@@ -1205,7 +1205,7 @@ CSteamID UTIL_SteamIDFromProperString( const char *pszInput, bool bAllowSteam2 /
 	     V_strncmp( szPrefix, pszInput, V_ARRAYSIZE( szPrefix ) - 1 ) == 0 )
 	{
 		CSteamID steamID;
-		bool bMatch = SteamIDFromSteam2String( pszInput, GetUniverse(), &steamID );
+		bool bMatch = steamID.SetFromSteam2String( pszInput, GetUniverse() );
 		if ( bMatch && steamID.IsValid() )
 			{ return steamID; }
 	}
