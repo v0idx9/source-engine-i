@@ -179,6 +179,7 @@ public:
 	virtual void OnMouseReleased( vgui::MouseCode code );
 	virtual void OnCursorMoved( int x, int y );
 	virtual void OnMouseWheeled( int delta );
+	bool		 BIsBeingManipulated() const { return m_bMousePressed; }
 
 	studiohdr_t* GetStudioHdr( void ) { return m_RootMDL.m_MDL.GetStudioHdr(); }
 	void SetBody( unsigned int nBody ) { m_RootMDL.m_MDL.m_nBody = nBody; }
