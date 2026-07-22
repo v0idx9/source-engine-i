@@ -683,7 +683,7 @@ void SpewInvitePanelThing( bool bCreated, const CInviteNotification* pInvite )
 				 bCreated ? "Created" : "Deleted",
 				 std::get<2>( key ) ? "INCOMING" : "OUTGOING",
 				 std::get<1>( key ) == CTFParty::EPendingType::ePending_Invite ? "INVITE" : "JOIN_REQUEST",
-				 SteamFriends()->GetFriendPersonaName( std::get<0>( key ) ) );
+				 steamapicontext->SteamFriends()->GetFriendPersonaName( std::get<0>( key ) ) );
 	ConColorMsg( bCreated ? Color( 100, 255, 190, 255 ) : Color( 255, 100, 190, 255 ), "%s\n", str.Get() );
 #endif // defined (STAGING_ONLY) || defined (DEBUG)
 }
@@ -701,7 +701,7 @@ void CTFMatchmakingDashboard::UpdatePartyInvites()
 		return false;
 	};
 
-	CSteamID steamIDLocal = SteamUser()->GetSteamID();
+	CSteamID steamIDLocal = steamapicontext->SteamUser()->GetSteamID();
 
 	// Loop through panels and ensure there's an invite for each panel, removing if needed
 	FOR_EACH_VEC_BACK( m_vecInviteHandles, i )

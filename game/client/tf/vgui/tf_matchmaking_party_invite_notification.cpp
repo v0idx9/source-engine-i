@@ -46,7 +46,7 @@ CInviteNotification::CInviteNotification( CSteamID steamID, CTFParty::EPendingTy
 	m_pAvatar->SetPlayer( steamID, k_EAvatarSize64x64 );
 
 	wchar_t wszBuf[ 256 ];
-	CUtlString strName = SteamFriends()->GetFriendPersonaName( steamID );
+	CUtlString strName = steamapicontext->SteamFriends()->GetFriendPersonaName( steamID );
 	const char* pszRequestString = NULL;
 	if ( m_eType == CTFParty::EPendingType::ePending_JoinRequest )
 	{

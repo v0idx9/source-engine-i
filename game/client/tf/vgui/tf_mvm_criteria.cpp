@@ -237,7 +237,7 @@ public:
 
 		if ( m_nPartySlot == 0 )
 		{
-			steamIDMember = SteamUser()->GetSteamID();
+			steamIDMember = steamapicontext->SteamUser()->GetSteamID();
 			bHasTicket = GTFGCClientSystem()->BLocalPlayerInventoryHasMvmTicket();
 			bUsingSquadSurplus = GTFPartyClient()->GetLocalPlayerCriteria().GetSquadSurplus();
 		}
@@ -595,7 +595,7 @@ void CMVMCriteriaPanel::WriteControls()
 	}
 	else if ( !GTFGCClientSystem()->GetLocalPlayerInventoryMvmTicketCount() )
 	{
-		vecPlayersWithoutTickets.AddToTail( SteamUser()->GetSteamID() );
+		vecPlayersWithoutTickets.AddToTail( steamapicontext->SteamUser()->GetSteamID() );
 	}
 
 	m_MvMEconItemsGroupBox->SetControlVisible( "MissingTicketsLabel", vecPlayersWithoutTickets.Count() );

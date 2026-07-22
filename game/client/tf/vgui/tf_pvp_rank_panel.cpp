@@ -366,7 +366,7 @@ const LevelInfo_t& CPvPRankPanel::GetLevel( bool bCurrent ) const
 	{
 		EMMRating eRating = bCurrent ? m_pMatchDesc->GetCurrentDisplayRank() 
 									 : m_pMatchDesc->GetLastAckdDisplayRank();
-		CTFRatingData* pRatingData = SteamUser() ? CTFRatingData::YieldingGetPlayerRatingDataBySteamID( SteamUser()->GetSteamID(), eRating )
+		CTFRatingData* pRatingData = steamapicontext->SteamUser() ? CTFRatingData::YieldingGetPlayerRatingDataBySteamID( steamapicontext->SteamUser()->GetSteamID(), eRating )
 												 : NULL;
 		uint32 nCurrentRank = pRatingData ? pRatingData->GetRatingData().unRatingPrimary : 0;
 		return m_pProgressionDesc->GetLevelByNumber( nCurrentRank );

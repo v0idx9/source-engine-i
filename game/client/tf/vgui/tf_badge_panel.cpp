@@ -194,7 +194,7 @@ void CTFLocalPlayerBadgePanel::UpdateBadge()
 	if ( m_eMatchGroup == k_eTFMatchGroup_Invalid )
 		return;
 
-	SetupBadge( GetMatchGroupDescription( m_eMatchGroup ), SteamUser()->GetSteamID() );
+	SetupBadge( GetMatchGroupDescription( m_eMatchGroup ), steamapicontext->SteamUser()->GetSteamID() );
 }
 
 class CTFStaticBadgePanel : public vgui::EditablePanel

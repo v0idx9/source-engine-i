@@ -341,17 +341,17 @@ void CTFGCClientSystem::WebapiInventoryThink()
 		state.m_eState = kWebapiInventoryState_RequestAuthToken;
 		// fallthrough
 	case kWebapiInventoryState_RequestAuthToken:
-		if ( !SteamUser() )
+		if ( !steamapicontext->SteamUser() )
 			return;
 
 		if ( state.m_hSteamAuthTicket != k_HAuthTicketInvalid )
 		{
-			SteamUser()->CancelAuthTicket( state.m_hSteamAuthTicket );
+			steamapicontext->SteamUser()->CancelAuthTicket( state.m_hSteamAuthTicket );
 			state.m_hSteamAuthTicket = k_HAuthTicketInvalid;
 		}
 
 		// Request a ticket from Steam
-		state.m_hSteamAuthTicket = SteamUser()->GetAuthTicketForWebApi( "tf2sdk" );
+		state.m_hSteamAuthTicket = steamapicontext->SteamUser()->GetAuthTicketForWebApi( "tf2sdk" );
 		if ( state.m_hSteamAuthTicket == k_HAuthTicketInvalid )
 		{
 			state.Backoff();
@@ -371,14 +371,14 @@ void CTFGCClientSystem::WebapiInventoryThink()
 	case kWebapiInventoryState_RequestInventory:
 	{
 		// need access to http + local steam id
-		if ( !SteamHTTP() || !SteamUser() )
+		if ( !steamapicontext->SteamHTTP() || !steamapicontext->SteamUser() )
 			return;
 
 		// Request inventory from teamfortress.com webapi
 		CFmtStr strUrl( "%swebapi/ISDK/GetInventory/v0001", GetWebBaseUrl() );
 
 		state.m_InventoryRequestCompleted.Cancel();
-		state.m_hInventoryRequest = SteamHTTP()->CreateHTTPRequest( k_EHTTPMethodGET, strUrl.Get() );
+		state.m_hInventoryRequest = steamapicontext->SteamHTTP()->CreateHTTPRequest( k_EHTTPMethodGET, strUrl.Get() );
 		if ( state.m_hInventoryRequest == INVALID_HTTPREQUEST_HANDLE )
 		{
 			// try again next frame
@@ -386,36 +386,36 @@ void CTFGCClientSystem::WebapiInventoryThink()
 		}
 
 		// This mod's appid (NOT tf2's appid)
-		SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "appid", CNumStr( engine->GetAppID() ) );
+		steamapicontext->SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "appid", CNumStr( engine->GetAppID() ) );
 
 		// Authentication token
 		CUtlMemory<char> strHexToken;
 		int nBufSize = 2 * state.m_bufAuthToken.Count();
 		strHexToken.EnsureCapacity( nBufSize + 1 );
 		V_binarytohex( state.m_bufAuthToken.Base(), state.m_bufAuthToken.Count(), strHexToken.Base(), strHexToken.Count() ); // TODO: Fix V_binarytohex; it's O(n^2) due to repeated uses of strncat.
-		SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "ticket", strHexToken.Base() );
+		steamapicontext->SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "ticket", strHexToken.Base() );
 		
 		if ( GetUniverse() != k_EUniversePublic )
 		{
 			// use beta tf2 appid on non public universes
-			SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "game_appid", "810" );
+			steamapicontext->SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "game_appid", "810" );
 		}
 
 		// If we already have an so cache for this user, include its version so we don't send the whole cache if it's unchanged
-		CGCClientSharedObjectCache* pExistingSOCache = GetSOCache( SteamUser()->GetSteamID() );
+		CGCClientSharedObjectCache* pExistingSOCache = GetSOCache( steamapicontext->SteamUser()->GetSteamID() );
 		if( pExistingSOCache && pExistingSOCache->BIsSubscribed() )
 		{
-			SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "version", CNumStr( pExistingSOCache->GetVersion() ) );
+			steamapicontext->SteamHTTP()->SetHTTPRequestGetOrPostParameter( state.m_hInventoryRequest, "version", CNumStr( pExistingSOCache->GetVersion() ) );
 		}
 
 		// Wait a long time for this, api might be slow / inventories are large
 		if ( mod_inventory_request_timeout.GetInt() > 0 )
 		{
-			SteamHTTP()->SetHTTPRequestNetworkActivityTimeout( state.m_hInventoryRequest, mod_inventory_request_timeout.GetInt() );
+			steamapicontext->SteamHTTP()->SetHTTPRequestNetworkActivityTimeout( state.m_hInventoryRequest, mod_inventory_request_timeout.GetInt() );
 		}
 
 		SteamAPICall_t callResult;
-		if ( !SteamHTTP()->SendHTTPRequest( state.m_hInventoryRequest, &callResult ) )
+		if ( !steamapicontext->SteamHTTP()->SendHTTPRequest( state.m_hInventoryRequest, &callResult ) )
 		{
 			state.Backoff();
 			return;
@@ -442,7 +442,7 @@ void CTFGCClientSystem::WebapiInventoryThink()
 		// Cancel any existing server auth ticket until we are connected.
 		if ( state.m_hServerAuthTicket != k_HAuthTicketInvalid )
 		{
-			SteamUser()->CancelAuthTicket( state.m_hServerAuthTicket );
+			steamapicontext->SteamUser()->CancelAuthTicket( state.m_hServerAuthTicket );
 			state.m_hServerAuthTicket = k_HAuthTicketInvalid;
 		}
 
@@ -462,10 +462,10 @@ void CTFGCClientSystem::WebapiInventoryThink()
 			return;
 		}
 
-		if ( !SteamUser() )
+		if ( !steamapicontext->SteamUser() )
 			return;
 
-		CGCClientSharedObjectCache* pSOCache = GetSOCache( SteamUser()->GetSteamID() );
+		CGCClientSharedObjectCache* pSOCache = GetSOCache( steamapicontext->SteamUser()->GetSteamID() );
 		if ( !pSOCache )
 			return;
 
@@ -500,7 +500,7 @@ void CTFGCClientSystem::WebapiInventoryThink()
 			return;
 		}
 
-		if ( !SteamUser() )
+		if ( !steamapicontext->SteamUser() )
 			return;
 
 		// "Sign" the message by including an auth ticket that identifies itself as the hash of the requested items
@@ -521,7 +521,7 @@ void CTFGCClientSystem::WebapiInventoryThink()
 		V_binarytohex( digest + V_ARRAYSIZE( digest ) - knHashBytesToUse, knHashBytesToUse, strDigest, V_ARRAYSIZE( strDigest ) );
 
 		// Request the auth ticket from steam and wait for it to arrive.
-		state.m_hServerAuthTicket = SteamUser()->GetAuthTicketForWebApi( strDigest );
+		state.m_hServerAuthTicket = steamapicontext->SteamUser()->GetAuthTicketForWebApi( strDigest );
 		state.m_eState = kWebapiInventoryState_WaitingForServerAuthToken;
 		break;
 	}
@@ -562,7 +562,7 @@ void CTFGCClientSystem::WebapiInventoryThink()
 		kv->SetString( "ticket", strHexToken.Base() );
 
 		// Add any server-specific fields so it knows what to do with the given inventory items (per-mod loadout may not match the user's real tf2 loadout)
-		SDK_AddServerInventoryInfo( kv, GetSOCache( SteamUser()->GetSteamID() ) );
+		SDK_AddServerInventoryInfo( kv, GetSOCache( steamapicontext->SteamUser()->GetSteamID() ) );
 
 		// Send to the server
 		engine->ServerCmdKeyValues( kv );
@@ -679,7 +679,7 @@ void CTFGCClientSystem::OnWebapiServerAuthTicketReceived( GetTicketForWebApiResp
 
 void CTFGCClientSystem::OnWebapiInventoryReceived( HTTPRequestCompleted_t* pInfo, bool bIOFailure )
 {
-	if ( !SteamHTTP() )
+	if ( !steamapicontext->SteamHTTP() )
 		return; // probably shutting down, just ignore it
 
 	WebapiInventoryState_t& state = m_WebapiInventory;
@@ -691,7 +691,7 @@ void CTFGCClientSystem::OnWebapiInventoryReceived( HTTPRequestCompleted_t* pInfo
 		// Free our http request (Can we be sure this is the right one?)
 		if ( state.m_hInventoryRequest != INVALID_HTTPREQUEST_HANDLE )
 		{
-			SteamHTTP()->ReleaseHTTPRequest( state.m_hInventoryRequest );
+			steamapicontext->SteamHTTP()->ReleaseHTTPRequest( state.m_hInventoryRequest );
 			state.m_hInventoryRequest = INVALID_HTTPREQUEST_HANDLE;
 		}
 		return;
@@ -702,7 +702,7 @@ void CTFGCClientSystem::OnWebapiInventoryReceived( HTTPRequestCompleted_t* pInfo
 	if ( pInfo->m_hRequest != state.m_hInventoryRequest )
 	{
 		Assert( false );
-		SteamHTTP()->ReleaseHTTPRequest( pInfo->m_hRequest );
+		steamapicontext->SteamHTTP()->ReleaseHTTPRequest( pInfo->m_hRequest );
 		return;
 	}
 
@@ -715,20 +715,20 @@ void CTFGCClientSystem::OnWebapiInventoryReceived( HTTPRequestCompleted_t* pInfo
 
 	if ( !pInfo->m_bRequestSuccessful || pInfo->m_eStatusCode != k_EHTTPStatusCode200OK )
 	{
-		SteamHTTP()->ReleaseHTTPRequest( pInfo->m_hRequest );
+		steamapicontext->SteamHTTP()->ReleaseHTTPRequest( pInfo->m_hRequest );
 		return;
 	}
 
 	// Extract the result
 	uint32 unBytes;
-	Verify( SteamHTTP()->GetHTTPResponseBodySize( pInfo->m_hRequest, &unBytes ) );
+	Verify( steamapicontext->SteamHTTP()->GetHTTPResponseBodySize( pInfo->m_hRequest, &unBytes ) );
 	CUtlBuffer bufInventory;
 	bufInventory.EnsureCapacity( unBytes );
 	bufInventory.SeekPut( CUtlBuffer::SEEK_HEAD, unBytes );
-	Verify( SteamHTTP()->GetHTTPResponseBodyData( pInfo->m_hRequest, (uint8*)bufInventory.Base(), unBytes ) );
+	Verify( steamapicontext->SteamHTTP()->GetHTTPResponseBodyData( pInfo->m_hRequest, (uint8*)bufInventory.Base(), unBytes ) );
 
 	// We're done with the request now
-	SteamHTTP()->ReleaseHTTPRequest( pInfo->m_hRequest );
+	steamapicontext->SteamHTTP()->ReleaseHTTPRequest( pInfo->m_hRequest );
 
 	// Parse it to json and extract the data
 	GCSDK::CWebAPIValues* pValues = GCSDK::CWebAPIValues::ParseJSON( bufInventory );

@@ -151,7 +151,7 @@ void CDashboardPartyMember::PerformLayout()
 	if ( m_eMemberState != MEMBER_NONE )
 	{
 		// First their name
-		lambdaAddTipText( SteamFriends()->GetFriendPersonaName( m_steamIDPartyMember ) );
+		lambdaAddTipText( steamapicontext->SteamFriends()->GetFriendPersonaName( m_steamIDPartyMember ) );
 
 		bool bHyphenAdded = false;
 
