@@ -65,6 +65,9 @@ ConversionErrorType ImgUtl_PadRGBAImage( const unsigned char *srcBuf, const int 
 ConversionErrorType ImgUtl_ConvertTGAToVTF( const char *tgaPath, int nMaxWidth = -1, int nMaxHeight = -1 );
 ConversionErrorType ImgUtl_WriteGenericVMT( const char *vtfPath, const char *pMaterialsSubDir );
 ConversionErrorType ImgUtl_WriteRGBAAsPNGToBuffer( const unsigned char *pRGBAData, int nWidth, int nHeight, CUtlBuffer &bufOutData, int nStride = 0 );
+
+/// Get the size of a PNG from a buffer
+ConversionErrorType ImgUtl_GetPNGSize( CUtlBuffer &fileData, uint32_t &uWidth, uint32_t &uHeight );
 ConversionErrorType ImgUtl_WriteRGBAAsJPEGToBuffer( const unsigned char *pRGBAData, int nWidth, int nHeight, CUtlBuffer &bufOutData, int nStride = 0 );
 
 //

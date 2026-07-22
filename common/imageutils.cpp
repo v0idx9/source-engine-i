@@ -1895,6 +1895,43 @@ static void FlushPNGData( png_structp png_ptr )
 	// We're writing to a memory buffer, it's a NOP
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Reads the dimensions out of a PNG held in memory.
+//
+//			A PNG is an 8 byte signature followed immediately by the IHDR
+//			chunk, whose first two fields are the width and height as
+//			big-endian 32 bit values. Reading those directly avoids setting up
+//			libpng (and its longjmp error handling) just to look at a header.
+//			The bytes are assembled by hand so there is no unaligned load and
+//			no dependence on host endianness.
+//-----------------------------------------------------------------------------
+ConversionErrorType ImgUtl_GetPNGSize( CUtlBuffer &fileData, uint32_t &uWidth, uint32_t &uHeight )
+{
+	static const unsigned char k_rgubPNGSignature[8] = { 137, 'P', 'N', 'G', 13, 10, 26, 10 };
+	// signature + chunk length + chunk type + width + height
+	static const int k_cubMinimum = 8 + 4 + 4 + 4 + 4;
+
+	const unsigned char *pubData = (const unsigned char *)fileData.Base();
+	int cubData = fileData.TellPut();
+
+	if ( !pubData || cubData < k_cubMinimum )
+		return CE_ERROR_PARSING_SOURCE;
+
+	if ( Q_memcmp( pubData, k_rgubPNGSignature, sizeof( k_rgubPNGSignature ) ) != 0 )
+		return CE_ERROR_PARSING_SOURCE;
+
+	if ( Q_memcmp( pubData + 12, "IHDR", 4 ) != 0 )
+		return CE_ERROR_PARSING_SOURCE;
+
+	uWidth  = ( (uint32_t)pubData[16] << 24 ) | ( (uint32_t)pubData[17] << 16 ) | ( (uint32_t)pubData[18] << 8 ) | (uint32_t)pubData[19];
+	uHeight = ( (uint32_t)pubData[20] << 24 ) | ( (uint32_t)pubData[21] << 16 ) | ( (uint32_t)pubData[22] << 8 ) | (uint32_t)pubData[23];
+
+	if ( uWidth == 0 || uHeight == 0 )
+		return CE_ERROR_PARSING_SOURCE;
+
+	return CE_SUCCESS;
+}
+
 ConversionErrorType ImgUtl_WriteRGBAAsPNGToBuffer( const unsigned char *pRGBAData, int nWidth, int nHeight, CUtlBuffer &bufOutData, int nStride )
 {
 #if !defined( _X360 )
