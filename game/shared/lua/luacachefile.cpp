@@ -198,6 +198,9 @@ static const luaL_Reg lcf_funcs[] = { { "sendfile", luasrc_sendfile }, { NULL, N
 
 #endif
 
+// Defined further down; lcf_open (client) needs it to wipe a stale cache.
+extern void lcf_recursivedeletefile( const char *current );
+
 extern void lcf_open( lua_State *L )
 {
 #ifndef CLIENT_DLL
@@ -205,6 +208,13 @@ extern void lcf_open( lua_State *L )
 	luaL_register( L, "_G", lcf_funcs );
 	lua_pop( L, 1 );
 #else
+	// Clear any stale cache left by a previous session before recreating it.
+	// lcf_close() normally wipes lua_cache on shutdown, but iOS terminates the
+	// app without a clean shutdown, so that never runs - the leftover downloaded
+	// Lua then crashes the next launch. Wiping on startup makes the cleanup
+	// happen regardless of how the last session ended.
+	lcf_recursivedeletefile( LUA_PATH_CACHE );
+
 	// force create this directory incase it doesn't exist
 	filesystem->CreateDirHierarchy( LUA_PATH_CACHE, "MOD" );
 #endif
