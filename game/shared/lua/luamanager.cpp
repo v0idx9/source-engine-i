@@ -182,7 +182,14 @@ void luasrc_setmodulepaths(lua_State *L) {
   Q_snprintf( lookupCPath, sizeof( lookupCPath ), "%s/%s;%s", gamePath,
 #ifdef _WIN32
     LUA_PATH_MODULES "\\?.dll",
-#elif _LINUX
+#elif defined( OSX ) || defined( APPLE ) || defined( IOS ) || defined( _IOS )
+    LUA_PATH_MODULES "/?.dylib",
+#else
+    // Linux and any other POSIX. Must exist unconditionally: this argument
+    // feeds the middle %s of the format string above, and if the platform
+    // branch produces nothing the call is left with one %s more than it has
+    // arguments, so the third %s strlen's a garbage stack pointer and crashes.
+    // iOS is neither _WIN32 nor _LINUX, which is exactly how it used to crash.
     LUA_PATH_MODULES "/?.so",
 #endif
 	luaL_checkstring(L, -1) );
