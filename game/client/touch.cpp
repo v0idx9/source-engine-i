@@ -28,7 +28,10 @@ extern ConVar default_fov;
 
 extern IMatSystemSurface *g_pMatSystemSurface;
 
-#ifdef ANDROID
+#if defined( ANDROID ) || defined( IOS ) || defined( _IOS )
+// iOS is a touch-only device just like Android; SB++ only branched on ANDROID
+// so touch defaulted off here, leaving the player with no on-screen controls
+// in-game (the draw gate needs touch_enable). Enable it by default on iOS too.
 #define TOUCH_DEFAULT "1"
 #else
 #define TOUCH_DEFAULT "0"
