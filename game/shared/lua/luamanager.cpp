@@ -757,6 +757,47 @@ void luasrc_LoadWeapons (const char *path)
 			}
 
 			lua_pop(L, 1);
+
+			// DIAG: report the realm and whether the GMod-compat network-string
+			// helper is present in this Lua state, to pin down the server-only
+			// weapon load failure.
+			lua_getglobal(L, "util");
+			const char *utilType = lua_typename(L, lua_type(L, -1));
+			const char *ansType = "no-util";
+			if (lua_istable(L, -1))
+			{
+				lua_getfield(L, -1, "AddNetworkString");
+				ansType = lua_typename(L, lua_type(L, -1));
+				lua_pop(L, 1);
+			}
+			lua_getglobal(L, "SERVER");
+			bool isServer = lua_toboolean(L, -1) != 0;
+			lua_pop(L, 1);
+			lua_getglobal(L, "CLIENT");
+			bool isClient = lua_toboolean(L, -1) != 0;
+			lua_pop(L, 1);
+			lua_pop(L, 1); // util
+			Warning("DIAG weapon-load-fail: SERVER=%d CLIENT=%d util=%s util.AddNetworkString=%s\n",
+				isServer ? 1 : 0, isClient ? 1 : 0, utilType, ansType);
+
+			// Tolerant registration: the file set SWEP.PrintName / .Spawnable
+			// etc. before it errored (those assignments are near the top). Some
+			// GMod addons run server-only init that this cut-down engine cannot
+			// satisfy; register the weapon anyway so it still appears in the
+			// spawn menu with whatever fields were populated pre-error.
+			lua_getglobal(L, "SWEP");
+			if (lua_istable(L, -1))
+			{
+				lua_getfield(L, -1, "PrintName");
+				bool hasName = lua_isstring(L, -1);
+				lua_pop(L, 1);
+				if (hasName)
+				{
+					Warning("  -> registering partially-loaded weapon %s anyway\n", classBase);
+					RegisterScriptedWeapon(classBase);
+				}
+			}
+			lua_pop(L, 1);
 		}
 
 		lua_pushnil(L);
