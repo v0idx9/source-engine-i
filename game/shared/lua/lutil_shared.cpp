@@ -13,9 +13,11 @@
 #include "lgametrace.h"
 #include "mathlib/lvector.h"
 #include "luasrclib.h"
-#ifdef SBPP
+// lnet_shared.cpp is always part of the SB++ file set, so LuaNet_* symbols
+// link on both realms; include its header unconditionally so util's
+// network-string helpers are always available (the SBPP *macro* is not
+// actually defined by the build, which previously compiled them out).
 #include "lnet_shared.h"
-#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -152,7 +154,6 @@ static int luasrc_UTIL_PlayerByIndex (lua_State *L) {
   return 1;
 }
 
-#ifdef SBPP
 static int luasrc_UTIL_AddNetworkString( lua_State *L )
 {
   const char *name = luaL_checkstring( L, 1 );
@@ -178,7 +179,6 @@ static int luasrc_UTIL_NetworkIDToString( lua_State *L )
   else     lua_pushnil( L );
   return 1;
 }
-#endif
 
 static const luaL_Reg util_funcs[] = {
   // {"UTIL_VecToYaw",  luasrc_UTIL_VecToYaw},
@@ -224,11 +224,9 @@ static const luaL_Reg util_funcs[] = {
   // {"UTIL_PlayerByIndex",  luasrc_UTIL_PlayerByIndex},
   {"PlayerByIndex",  luasrc_UTIL_PlayerByIndex},
   {"GetAllPlayers", luasrc_UTIL_GetAllPlayers},
-#ifdef SBPP
   {"AddNetworkString", luasrc_UTIL_AddNetworkString},
   {"NetworkStringToID", luasrc_UTIL_NetworkStringToID},
   {"NetworkIDToString", luasrc_UTIL_NetworkIDToString},
-#endif
   {NULL, NULL}
 };
 
