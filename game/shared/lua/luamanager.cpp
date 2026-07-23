@@ -110,11 +110,48 @@ static int luasrc_include(lua_State *L) {
   char source[MAX_PATH];
   Q_strncpy( source, ar2.source + 1, sizeof( source ) );
   Q_StripFilename( source );
+  const char *arg = luaL_checkstring(L, 1);
   char filename[MAX_PATH];
-  // @ThePixelMoon: hacky hack
-  Q_snprintf( filename, sizeof( filename ), "%s/../%s", source, luaL_checkstring(L, 1) );
+
+  // GMod semantics: include() is relative to the calling file's directory.
+  // e.g. an entity's init.lua doing include("shared.lua").
+  Q_snprintf( filename, sizeof( filename ), "%s/%s", source, arg );
+  if ( filesystem->FileExists( filename, "MOD" ) || filesystem->FileExists( filename, "GAME" ) ) {
+    luasrc_dofile_vfs(L, filename);
+    return 0;
+  }
+
+  // HL2:SB++ base content passes paths relative to the lua/ root,
+  // e.g. include("palm/cl_init.lua"). Try that next.
+  Q_snprintf( filename, sizeof( filename ), "%s/%s", LUA_ROOT, arg );
+  if ( filesystem->FileExists( filename, "MOD" ) || filesystem->FileExists( filename, "GAME" ) ) {
+    luasrc_dofile_vfs(L, filename);
+    return 0;
+  }
+
+  // Legacy fallback: one directory up from the caller (old "hacky hack").
+  Q_snprintf( filename, sizeof( filename ), "%s/../%s", source, arg );
   luasrc_dofile_vfs(L, filename);
   return 0;
+}
+
+
+static int luasrc_AddCSLuaFile (lua_State *L) {
+  // In GMod this queues a file for client download. On this port, every mounted
+  // addon's files are already present client-side (GMA/folder/VPK mount), so
+  // there is nothing to send: no-op for compatibility.
+  (void)L;
+  return 0;
+}
+
+
+static int luasrc_GetConVar (lua_State *L) {
+  ConVar *pVar = cvar->FindVar( luaL_checkstring(L, 1) );
+  if ( pVar )
+    lua_pushconvar(L, pVar);
+  else
+    lua_pushnil(L);
+  return 1;
 }
 
 static int luasrc_includeC (lua_State *L) {
@@ -138,6 +175,8 @@ static const luaL_Reg base_funcs[] = {
   {"type", luasrc_type},
   {"include", luasrc_include},
   {"includeC", luasrc_includeC},
+  {"AddCSLuaFile", luasrc_AddCSLuaFile},
+  {"GetConVar", luasrc_GetConVar},
   {NULL, NULL}
 };
 

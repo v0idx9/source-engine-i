@@ -40,6 +40,7 @@
 typedef struct BlockCnt {
   struct BlockCnt *previous;  /* chain */
   int breaklist;  /* list of jumps out of this loop */
+  int continuelist;  /* list of jumps to the next iteration of this loop */
   lu_byte nactvar;  /* # active locals outside the breakable structure */
   lu_byte upval;  /* true if some variable in the block is an upvalue */
   lu_byte isbreakable;  /* true if `block' is a loop */
@@ -284,6 +285,7 @@ static void enterlevel (LexState *ls) {
 
 static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
   bl->breaklist = NO_JUMP;
+  bl->continuelist = NO_JUMP;
   bl->isbreakable = isbreakable;
   bl->nactvar = fs->nactvar;
   bl->upval = 0;
@@ -988,6 +990,24 @@ static void breakstat (LexState *ls) {
 }
 
 
+static void continuestat (LexState *ls) {
+  /* like break, but jumps to the loop's next-iteration point instead of out.
+     The per-loop patch target is set in whilestat/forbody/repeatstat. */
+  FuncState *fs = ls->fs;
+  BlockCnt *bl = fs->bl;
+  int upval = 0;
+  while (bl && !bl->isbreakable) {
+    upval |= bl->upval;
+    bl = bl->previous;
+  }
+  if (!bl)
+    luaX_syntaxerror(ls, "no loop to continue");
+  if (upval)
+    luaK_codeABC(fs, OP_CLOSE, bl->nactvar, 0, 0);
+  luaK_concat(fs, &bl->continuelist, luaK_jump(fs));
+}
+
+
 static void whilestat (LexState *ls, int line) {
   /* whilestat -> WHILE cond DO block END */
   FuncState *fs = ls->fs;
@@ -1000,6 +1020,7 @@ static void whilestat (LexState *ls, int line) {
   enterblock(fs, &bl, 1);
   checknext(ls, TK_DO);
   block(ls);
+  luaK_patchtohere(fs, bl.continuelist);  /* continue re-evaluates the condition */
   luaK_patchlist(fs, luaK_jump(fs), whileinit);
   check_match(ls, TK_END, TK_WHILE, line);
   leaveblock(fs);
@@ -1018,6 +1039,7 @@ static void repeatstat (LexState *ls, int line) {
   luaX_next(ls);  /* skip REPEAT */
   chunk(ls);
   check_match(ls, TK_UNTIL, TK_REPEAT, line);
+  luaK_patchtohere(fs, bl1.continuelist);  /* continue falls through to UNTIL cond */
   condexit = cond(ls);  /* read condition (inside scope block) */
   if (!bl2.upval) {  /* no upvalues? */
     leaveblock(fs);  /* finish scope */
@@ -1057,6 +1079,10 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
   block(ls);
   leaveblock(fs);  /* end of scope for declared variables */
   luaK_patchtohere(fs, prep);
+  /* continue jumps to the loop step (FORLOOP/TFORLOOP); collected on the
+     enclosing breakable for-block, which is fs->bl now that the inner scope
+     block has been left. */
+  luaK_patchtohere(fs, fs->bl->continuelist);
   endfor = (isnum) ? luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP) :
                      luaK_codeABC(fs, OP_TFORLOOP, base, 0, nvars);
   luaK_fixline(fs, line);  /* pretend that `OP_FOR' starts the loop */
@@ -1313,6 +1339,11 @@ static int statement (LexState *ls) {
       luaX_next(ls);  /* skip BREAK */
       breakstat(ls);
       return 1;  /* must be last statement */
+    }
+    case TK_CONTINUE: {  /* stat -> continuestat */
+      luaX_next(ls);  /* skip CONTINUE */
+      continuestat(ls);
+      return 1;  /* must be last statement (like break) */
     }
     default: {
       exprstat(ls);
