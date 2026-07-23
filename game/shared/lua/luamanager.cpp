@@ -668,11 +668,20 @@ void luasrc_LoadWeapons (const char *path)
 
 		if (g_pFullFileSystem->FindIsDirectory(fh))
 		{
+			// Folder SWEP. Prefer the realm-specific entry (init.lua/cl_init.lua,
+			// which typically include shared.lua themselves); fall back to
+			// shared.lua, the common layout for simple folder SWEPs that ship
+			// only that file (e.g. weapon_fizzler/shared.lua).
+			char realmFile[MAX_PATH];
 #ifdef CLIENT_DLL
-			Q_snprintf(filename, sizeof(filename), "%s" LUA_PATH_WEAPONS "/%s/cl_init.lua", path, classBase);
+			Q_snprintf(realmFile, sizeof(realmFile), "%s" LUA_PATH_WEAPONS "/%s/cl_init.lua", path, classBase);
 #else
-			Q_snprintf(filename, sizeof(filename), "%s" LUA_PATH_WEAPONS "/%s/init.lua", path, classBase);
+			Q_snprintf(realmFile, sizeof(realmFile), "%s" LUA_PATH_WEAPONS "/%s/init.lua", path, classBase);
 #endif
+			if (filesystem->FileExists(realmFile, "MOD") || filesystem->FileExists(realmFile, "GAME"))
+				Q_strncpy(filename, realmFile, sizeof(filename));
+			else
+				Q_snprintf(filename, sizeof(filename), "%s" LUA_PATH_WEAPONS "/%s/shared.lua", path, classBase);
 		}
 		else
 		{

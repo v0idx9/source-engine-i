@@ -81,12 +81,25 @@ static void WriteAddonSpawnlist()
 	{
 		const char *cls = g_AddonWeaponClasses[k].Get();
 
-		// Prefer the addon's own icon (materials/entities/<class>.png), which
-		// GMod SWEPs conventionally ship; fall back to a stock icon otherwise.
+		// Icon lookup, in GMod-preference order:
+		//  1. materials/vgui/entities/<class>.vmt  (the standard SWEP spawn
+		//     icon; the menu loads .vmt/.vtf as a VGUI material - pass the
+		//     material-relative path WITH extension, no "materials/" prefix)
+		//  2. materials/entities/<class>.png       (loaded as a PNG file)
+		//  3. a stock fallback icon
 		char icon[MAX_PATH];
-		Q_snprintf( icon, sizeof( icon ), "materials/entities/%s.png", cls );
-		if ( !filesystem->FileExists( icon, "GAME" ) )
-			Q_strncpy( icon, "materials/entities/weapon_crowbar.png", sizeof( icon ) );
+		char probe[MAX_PATH];
+		Q_snprintf( probe, sizeof( probe ), "materials/vgui/entities/%s.vmt", cls );
+		if ( filesystem->FileExists( probe, "GAME" ) )
+		{
+			Q_snprintf( icon, sizeof( icon ), "vgui/entities/%s.vmt", cls );
+		}
+		else
+		{
+			Q_snprintf( icon, sizeof( icon ), "materials/entities/%s.png", cls );
+			if ( !filesystem->FileExists( icon, "GAME" ) )
+				Q_strncpy( icon, "materials/entities/weapon_crowbar.png", sizeof( icon ) );
+		}
 
 		g_pFullFileSystem->FPrintf( fh, "\t\"image_button\"\n\t{\n" );
 		g_pFullFileSystem->FPrintf( fh, "\t\t\"name\" \"%s\"\n", cls );

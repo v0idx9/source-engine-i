@@ -354,7 +354,20 @@ do
   if WEP then
     if WEP.SetHoldType == nil then function WEP:SetHoldType( t ) self.__holdtype = t end end
     if WEP.GetHoldType == nil then function WEP:GetHoldType() return self.__holdtype or "normal" end end
+    -- fire-rate / effect helpers this engine doesn't expose; safe no-ops so
+    -- SWEP:PrimaryAttack bodies run (rate limiting just won't apply).
+    if WEP.SetNextPrimaryFire == nil then function WEP:SetNextPrimaryFire() end end
+    if WEP.SetNextSecondaryFire == nil then function WEP:SetNextSecondaryFire() end end
+    if WEP.ShootEffects == nil then function WEP:ShootEffects() end end
+    if WEP.SendWeaponAnim == nil then function WEP:SendWeaponAnim() end end
   end
+end
+
+-- movetype enums (Source MoveType_t values)
+if MOVETYPE_VPHYSICS == nil then
+  MOVETYPE_NONE = 0; MOVETYPE_ISOMETRIC = 1; MOVETYPE_WALK = 2; MOVETYPE_STEP = 3
+  MOVETYPE_FLY = 4; MOVETYPE_FLYGRAVITY = 5; MOVETYPE_VPHYSICS = 6; MOVETYPE_PUSH = 7
+  MOVETYPE_NOCLIP = 8; MOVETYPE_LADDER = 9; MOVETYPE_OBSERVER = 10; MOVETYPE_CUSTOM = 11
 end
 
 -- player library (enumeration)
@@ -428,6 +441,7 @@ if CLIENT then
   end
   if surface ~= nil then
     surface.CreateFont = surface.CreateFont or function() end
+    surface.GetTextureID = surface.GetTextureID or function() return -1 end
   end
   if cam == nil then
     cam = {}
