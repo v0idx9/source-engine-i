@@ -14,6 +14,93 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+// Weapon classes discovered in mounted addons this session. The HL2:SB++ spawn
+// menu is built entirely from settings/spawnlists/*.kv manifest files and never
+// enumerates registered SWEPs, so a mounted addon's weapon would load but never
+// appear. We collect the classes here and emit a generated spawnlist tab.
+static CUtlVector<CUtlString> g_AddonWeaponClasses;
+
+static void CollectAddonWeaponClass( const char *fileRelName )
+{
+	// fileRelName is a GMA-relative path like "lua/weapons/weapon_x.lua" or
+	// "lua/weapons/weapon_x/shared.lua". Extract the class (weapon_x).
+	static const char *kPrefix = "lua/weapons/";
+	const int		   prefixLen = 12; // strlen("lua/weapons/")
+	if ( Q_strnicmp( fileRelName, kPrefix, prefixLen ) != 0 )
+		return;
+
+	const char *rest = fileRelName + prefixLen;
+	if ( rest[0] == '\0' )
+		return;
+
+	char cls[128];
+	int	 i = 0;
+	for ( ; rest[i] && rest[i] != '/' && rest[i] != '.' && i < (int)sizeof( cls ) - 1; i++ )
+		cls[i] = rest[i];
+	cls[i] = '\0';
+	if ( cls[0] == '\0' )
+		return;
+
+	FOR_EACH_VEC( g_AddonWeaponClasses, k )
+	{
+		if ( Q_stricmp( g_AddonWeaponClasses[k].Get(), cls ) == 0 )
+			return; // already have it (folder SWEP has several files)
+	}
+	g_AddonWeaponClasses.AddToTail( CUtlString( cls ) );
+}
+
+// Emit settings/spawnlists/zz_addons.kv listing every mounted addon weapon so
+// the spawn menu shows them in an "Addons" tab. Uses ent_create (FCVAR_GAMEDLL,
+// no sv_cheats needed) so clicking an entry spawns the weapon to pick up.
+static void WriteAddonSpawnlist()
+{
+	const char *kPath = "settings/spawnlists/zz_addons.kv";
+
+	if ( g_AddonWeaponClasses.Count() == 0 )
+	{
+		// Nothing to list; remove any stale generated file.
+		if ( filesystem->FileExists( kPath, "MOD" ) )
+			filesystem->RemoveFile( kPath, "MOD" );
+		return;
+	}
+
+	filesystem->CreateDirHierarchy( "settings/spawnlists", "MOD" );
+
+	FileHandle_t fh = g_pFullFileSystem->Open( kPath, "wt", "MOD" );
+	if ( fh == FILESYSTEM_INVALID_HANDLE )
+	{
+		Warning( "Failed to write generated addon spawnlist: %s\n", kPath );
+		return;
+	}
+
+	g_pFullFileSystem->FPrintf( fh, "\"Addons\"\n{\n" );
+	g_pFullFileSystem->FPrintf( fh, "\t\"page_icon\" \"materials/icon16/bricks.png\"\n" );
+	g_pFullFileSystem->FPrintf( fh, "\t\"header\"\n\t{\n\t\t\"text\" \"Mounted Addon Weapons\"\n\t}\n" );
+
+	FOR_EACH_VEC( g_AddonWeaponClasses, k )
+	{
+		const char *cls = g_AddonWeaponClasses[k].Get();
+
+		// Prefer the addon's own icon (materials/entities/<class>.png), which
+		// GMod SWEPs conventionally ship; fall back to a stock icon otherwise.
+		char icon[MAX_PATH];
+		Q_snprintf( icon, sizeof( icon ), "materials/entities/%s.png", cls );
+		if ( !filesystem->FileExists( icon, "GAME" ) )
+			Q_strncpy( icon, "materials/entities/weapon_crowbar.png", sizeof( icon ) );
+
+		g_pFullFileSystem->FPrintf( fh, "\t\"image_button\"\n\t{\n" );
+		g_pFullFileSystem->FPrintf( fh, "\t\t\"name\" \"%s\"\n", cls );
+		g_pFullFileSystem->FPrintf( fh, "\t\t\"image\" \"%s\"\n", icon );
+		g_pFullFileSystem->FPrintf( fh, "\t\t\"command\" \"ent_create %s\"\n", cls );
+		g_pFullFileSystem->FPrintf( fh, "\t}\n" );
+	}
+
+	g_pFullFileSystem->FPrintf( fh, "}\n" );
+	g_pFullFileSystem->Close( fh );
+
+	DevMsg( "Wrote generated addon spawnlist with %d weapon(s): %s\n", g_AddonWeaponClasses.Count(), kPath );
+}
+
 static void ExtractZIP( const char *zipPath, const char *cacheBase, const char *gamePath )
 {
 	if ( !zipPath || !cacheBase )
@@ -371,6 +458,10 @@ static void ExtractGMA( const char *gmaPath, const char *cacheBase, const char *
 	filesystem->AddSearchPath( absOutBase, "GAME", PATH_ADD_TO_HEAD );
 
 	DevMsg( "Mounted GMA addon: %s -> %s (%d files)\n", gmaPath, absOutBase, entries.Count() );
+
+	// Record any SWEPs so they can be surfaced in the spawn menu.
+	FOR_EACH_VEC( entries, wi )
+		CollectAddonWeaponClass( entries[wi].name );
 }
 
 static void MountAddonFolder( const char *folder, const char *gamePath )
@@ -440,9 +531,14 @@ void MountAddons()
 	filesystem->AddSearchPath( LUA_PATH_CACHE, "MOD", PATH_ADD_TO_HEAD );
 	filesystem->AddSearchPath( LUA_PATH_CACHE, "GAME", PATH_ADD_TO_HEAD );
 
+	g_AddonWeaponClasses.RemoveAll();
+
 	MountAddonFolder( "addons", gamePath );
 	MountAddonFolder( "custom", gamePath );
 	MountAddonFolder( "mods", gamePath );
+
+	// Surface any addon SWEPs we found in a generated spawn-menu tab.
+	WriteAddonSpawnlist();
 }
 
 extern void lcf_recursivedeletefile( const char *current );
