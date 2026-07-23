@@ -33,6 +33,11 @@
 #include "tier0/memdbgon.h"
 
 ConVar gamemode( "gamemode", "sandbox", /*FCVAR_ARCHIVE |*/ FCVAR_REPLICATED );
+
+// GMod addons routinely read GetConVar("gmod_language"):GetString(). This cvar
+// does not exist in this engine, so that call returned nil and crashed every
+// such addon at load. Provide it (replicated so client and server agree).
+ConVar gmod_language( "gmod_language", "en", FCVAR_REPLICATED, "Language code, for GMod addon compatibility" );
 static char contentSearchPath[MAX_PATH];
 
 static void tag_error (lua_State *L, int narg, int tag) {

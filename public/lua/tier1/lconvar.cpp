@@ -513,6 +513,11 @@ static void RegisterFCVARGlobals (lua_State *L) {
     { "FCVAR_SERVER_CAN_EXECUTE",    FCVAR_SERVER_CAN_EXECUTE },
     { "FCVAR_SERVER_CANNOT_QUERY",   FCVAR_SERVER_CANNOT_QUERY },
     { "FCVAR_CLIENTCMD_CAN_EXECUTE", FCVAR_CLIENTCMD_CAN_EXECUTE },
+    // GMod-specific flags. This engine has no equivalent, so map them to 0:
+    // they are OR'd into flag masks and must be numbers, but carry no meaning
+    // here. Without them bit.bor(...) crashed on a nil argument.
+    { "FCVAR_LUA_SERVER",            0 },
+    { "FCVAR_LUA_CLIENT",            0 },
   };
   for ( size_t i = 0; i < sizeof(s_FCVARs)/sizeof(s_FCVARs[0]); ++i ) {
     lua_pushinteger( L, s_FCVARs[i].value );
