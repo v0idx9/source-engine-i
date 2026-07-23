@@ -235,6 +235,49 @@ if sound == nil then sound = {} end
 sound.Add = sound.Add or function() end
 sound.AddSoundOverrides = sound.AddSoundOverrides or function() end
 
+-- sound channel / attenuation / soundlevel enums (GMod exposes these as
+-- globals; addons put them in sound.Add tables at file scope, so they must
+-- have real values at load time).
+if CHAN_WEAPON == nil then
+  CHAN_REPLACE = -1; CHAN_AUTO = 0; CHAN_WEAPON = 1; CHAN_VOICE = 2
+  CHAN_ITEM = 3; CHAN_BODY = 4; CHAN_STREAM = 5; CHAN_STATIC = 6
+  CHAN_VOICE2 = 7; CHAN_VOICE_BASE = 8; CHAN_USER_BASE = 136
+end
+if ATTN_NORM == nil then
+  ATTN_NONE = 0; ATTN_NORM = 0.8; ATTN_IDLE = 2; ATTN_STATIC = 1.25
+  ATTN_RICOCHET = 2.5; ATTN_GUNFIRE = 0.27
+end
+if SNDLVL_NORM == nil then
+  SNDLVL_NONE = 0; SNDLVL_IDLE = 60; SNDLVL_STATIC = 66; SNDLVL_NORM = 75
+  SNDLVL_TALKING = 80; SNDLVL_GUNFIRE = 140
+  SNDLVL_60dB = 60; SNDLVL_65dB = 65; SNDLVL_70dB = 70; SNDLVL_75dB = 75
+  SNDLVL_80dB = 80; SNDLVL_85dB = 85; SNDLVL_90dB = 90; SNDLVL_95dB = 95
+  SNDLVL_100dB = 100; SNDLVL_105dB = 105; SNDLVL_120dB = 120; SNDLVL_130dB = 130
+end
+
+-- util network-string helpers. The engine only compiles these into the
+-- shared util table under the SBPP build flag, and the server realm ends up
+-- without them, so an addon's file-scope util.AddNetworkString crashes.
+-- Provide a working in-Lua registry when they are absent.
+if util == nil then util = {} end
+if util.AddNetworkString == nil then
+  local s2i, i2s, n = {}, {}, 0
+  function util.AddNetworkString(s) if s2i[s] then return s2i[s] end n = n + 1 s2i[s] = n i2s[n] = s return n end
+  function util.NetworkStringToID(s) return s2i[s] or 0 end
+  function util.NetworkIDToString(i) return i2s[i] end
+end
+
+-- CreateClientConVar (GMod): create-or-find a convar with archive/userinfo
+-- flags derived from its boolean args. Maps onto the engine's CreateConVar.
+if CreateClientConVar == nil and CreateConVar ~= nil then
+  function CreateClientConVar(name, default, shouldsave, userinfo, helptext, minv, maxv)
+    local flags = 0
+    if shouldsave ~= false then flags = flags + (FCVAR_ARCHIVE or 0) end
+    if userinfo then flags = flags + (FCVAR_USERINFO or 0) end
+    return CreateConVar(name, tostring(default), flags, helptext or "")
+  end
+end
+
 -- server/shared prop-management shims (no-op where unsupported)
 if cleanup == nil then
   cleanup = {}
@@ -275,6 +318,15 @@ spawnmenu.AddToolCategory = spawnmenu.AddToolCategory or function() end
 
 -- client-only rendering / UI shims
 if CLIENT then
+  -- Material(name): GMod returns an IMaterial. Map onto the engine's native
+  -- materials.FindMaterial so it yields a real, drawable material.
+  if Material == nil then
+    if materials ~= nil and materials.FindMaterial ~= nil then
+      function Material(name) return materials.FindMaterial(name, nil, false) end
+    else
+      function Material() return setmetatable({}, { __index = function() return function() return 0 end end }) end
+    end
+  end
   if killicon == nil then
     killicon = {}
     function killicon.Add() end
