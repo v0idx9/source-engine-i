@@ -204,6 +204,32 @@ if cvars == nil then
   function cvars.Bool(n, d) local c = GetConVar(n) return c and c:GetBool() or (d or false) end
 end
 
+-- GMod spells the angle constructor "Angle"; this engine registers it as
+-- "QAngle". Alias it so Angle(p, y, r) works.
+if Angle == nil and QAngle ~= nil then Angle = QAngle end
+
+-- hook: addon autorun can run before the base content's hook module has
+-- loaded (notably on the server), so hook.Add was nil and crashed. Provide a
+-- minimal implementation now and register it in package.loaded so the base
+-- module("hook") reuses this very table instead of replacing it.
+if hook == nil and (package == nil or package.loaded == nil or package.loaded.hook == nil) then
+  local H, hooks = {}, {}
+  function H.Add(event, name, fn) if event and name and fn then hooks[event] = hooks[event] or {} hooks[event][name] = fn end end
+  function H.Remove(event, name) if hooks[event] then hooks[event][name] = nil end end
+  function H.GetTable() return hooks end
+  function H.Run(event, ...)
+    local l = hooks[event]
+    if not l then return end
+    for _, fn in pairs(l) do
+      local ok, r = pcall(fn, ...)
+      if ok and r ~= nil then return r end
+    end
+  end
+  function H.Call(event, gm, ...) return H.Run(event, ...) end
+  hook = H
+  if package and package.loaded then package.loaded.hook = H end
+end
+
 -- sound registration (playback still uses the engine directly)
 if sound == nil then sound = {} end
 sound.Add = sound.Add or function() end
