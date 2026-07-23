@@ -4485,6 +4485,25 @@ const char *CBaseFileSystem::RelativePathToFullPath( const char *pFileName, cons
 			}
 			return pDest;
 		}
+#if defined( POSIX )
+		// FS_stat above is case-sensitive, but FixUpPath already lowercased the
+		// requested name, so a mixed-case file on a case-sensitive volume (iOS)
+		// is missed here even though the normal Open path finds it. This is the
+		// same case-insensitive directory scan Open uses; without it,
+		// AddCustomFontFile( "resource/Roboto-Black.ttf" ) fails on iOS while
+		// every PNG loads, because PNGs go through Open and fonts go through
+		// GetLocalPath. POSIX (not just LINUX/BSD) so Apple is covered too.
+		char caseFixedName[ MAX_FILEPATH ];
+		if ( findFileInDirCaseInsensitive_safe( pTmpFileName, caseFixedName ) && FS_stat( caseFixedName, &buf ) != -1 )
+		{
+			V_strncpy( pDest, caseFixedName, maxLenInChars );
+			if ( pPathType && pSearchPath->m_bIsRemotePath )
+			{
+				*pPathType |= PATH_IS_REMOTE;
+			}
+			return pDest;
+		}
+#endif
 	}
 
 	// not found
