@@ -278,6 +278,88 @@ if CreateClientConVar == nil and CreateConVar ~= nil then
   end
 end
 
+-- GMod entity/player method shims. These map onto the engine's native methods
+-- and are attached to the C++ metatables (reached via the registry), so they
+-- survive base content redefining global tables. Only added when absent.
+do
+  local reg = ( debug and debug.getregistry ) and debug.getregistry() or nil
+  local ENT = reg and reg.CBaseEntity or nil
+  local PLY = reg and reg.CBasePlayer or nil
+
+  if ENT then
+    if ENT.GetPhysicsObject == nil and ENT.VPhysicsGetObject ~= nil then
+      function ENT:GetPhysicsObject() return self:VPhysicsGetObject() end
+    end
+    if ENT.GetMassCenter == nil then
+      function ENT:GetMassCenter()
+        local p = self.GetPhysicsObject and self:GetPhysicsObject() or nil
+        if p and p.GetMassCenterLocalSpace then return p:GetMassCenterLocalSpace() end
+        return Vector( 0, 0, 0 )
+      end
+    end
+    if ENT.OBBMaxs == nil then function ENT:OBBMaxs() return Vector( 16, 16, 16 ) end end
+    if ENT.OBBMins == nil then function ENT:OBBMins() return Vector( -16, -16, -16 ) end end
+
+    -- Networked vars: stored per-entity (per realm). This is enough for
+    -- server-side addon logic; values are NOT synced across client/server on
+    -- this engine, so client-only reads see defaults.
+    if ENT.SetNWEntity == nil then
+      local function nwset( self, k, v ) local t = self.__nw if t == nil then t = {} self.__nw = t end t[k] = v end
+      local function nwget( self, k ) local t = self.__nw if t == nil then return nil end return t[k] end
+      function ENT:SetNWEntity( k, v ) nwset( self, "e_" .. k, v ) end
+      function ENT:GetNWEntity( k, fb ) local v = nwget( self, "e_" .. k ) if v == nil then if fb ~= nil then return fb end return NULL end return v end
+      function ENT:SetNWBool( k, v ) nwset( self, "b_" .. k, v and true or false ) end
+      function ENT:GetNWBool( k, fb ) local v = nwget( self, "b_" .. k ) if v == nil then return fb or false end return v end
+      function ENT:SetNWInt( k, v ) nwset( self, "i_" .. k, v ) end
+      function ENT:GetNWInt( k, fb ) local v = nwget( self, "i_" .. k ) if v == nil then return fb or 0 end return v end
+      function ENT:SetNWFloat( k, v ) nwset( self, "f_" .. k, v ) end
+      function ENT:GetNWFloat( k, fb ) local v = nwget( self, "f_" .. k ) if v == nil then return fb or 0 end return v end
+      function ENT:SetNWString( k, v ) nwset( self, "s_" .. k, tostring( v ) ) end
+      function ENT:GetNWString( k, fb ) local v = nwget( self, "s_" .. k ) if v == nil then return fb or "" end return v end
+      ENT.SetNW2Entity = ENT.SetNWEntity; ENT.GetNW2Entity = ENT.GetNWEntity
+      ENT.SetNW2Bool   = ENT.SetNWBool;   ENT.GetNW2Bool   = ENT.GetNWBool
+      ENT.SetNW2Int    = ENT.SetNWInt;    ENT.GetNW2Int    = ENT.GetNWInt
+    end
+  end
+
+  if PLY then
+    if PLY.EyePos == nil and PLY.EyePosition ~= nil then function PLY:EyePos() return self:EyePosition() end end
+    if PLY.GetAimVector == nil then
+      function PLY:GetAimVector()
+        local f = Vector( 0, 0, 0 )
+        if self.EyeVectors then self:EyeVectors( f ) end
+        return f
+      end
+    end
+    if PLY.GetEyeTrace == nil and util ~= nil and util.TraceLine ~= nil then
+      function PLY:GetEyeTrace()
+        local s = self:EyePosition()
+        return util.TraceLine( { start = s, endpos = s + self:GetAimVector() * 32768, filter = self } )
+      end
+    end
+    if PLY.Alive == nil and PLY.IsAlive ~= nil then function PLY:Alive() return self:IsAlive() end end
+    if PLY.SelectWeapon == nil then
+      function PLY:SelectWeapon( cls )
+        if self.Weapon_Switch and self.GetWeapon then
+          local w = self:GetWeapon( cls )
+          if w then self:Weapon_Switch( w ) end
+        end
+      end
+    end
+  end
+end
+
+-- player library (enumeration)
+if player == nil then player = {} end
+player.GetAll = player.GetAll or function() return ( util and util.GetAllPlayers and util.GetAllPlayers() ) or {} end
+player.GetHumans = player.GetHumans or player.GetAll
+player.GetCount = player.GetCount or function() return #player.GetAll() end
+
+-- misc globals used by addons
+if IsFirstTimePredicted == nil then function IsFirstTimePredicted() return true end end
+if table.IsEmpty == nil then function table.IsEmpty( t ) return next( t ) == nil end end
+if table.Empty == nil then function table.Empty( t ) for k in pairs( t ) do t[k] = nil end end end
+
 -- server/shared prop-management shims (no-op where unsupported)
 if cleanup == nil then
   cleanup = {}

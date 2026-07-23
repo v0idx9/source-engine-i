@@ -448,7 +448,20 @@ static int luasrc_ConVar (lua_State *L) {
   }
 
   const char *pDefault = luaL_checkstring(L, 2);
-  int   flags          = luaL_optint(L, 3, 0);
+  // GMod's CreateConVar accepts the flags argument as either a number or a
+  // table of FCVAR_* enums to be OR'd together. Support both so addon code
+  // like CreateConVar(name, val, {FCVAR_ARCHIVE, FCVAR_NOTIFY}, help) loads.
+  int flags = 0;
+  if (lua_istable(L, 3)) {
+    int n = (int)lua_objlen(L, 3);
+    for (int i = 1; i <= n; i++) {
+      lua_rawgeti(L, 3, i);
+      flags |= (int)lua_tointeger(L, -1);
+      lua_pop(L, 1);
+    }
+  } else {
+    flags = luaL_optint(L, 3, 0);
+  }
   const char *pHelp    = luaL_optstring(L, 4, NULL);
   bool  bMin           = luaL_optboolean(L, 5, 0);
   float fMin           = luaL_optnumber(L, 6, 0.0);
