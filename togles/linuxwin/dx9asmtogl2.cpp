@@ -3825,28 +3825,39 @@ int D3DToGL::TranslateShader( uint32* code, CUtlBuffer *pBufDisassembledCode, bo
 		}
 		else
 		{
-			for ( int i=0; i<32; i++ )
+			// On GL ES 3.0 (ANGLE) the vertex and fragment stages are linked
+			// with strict varying matching: a fragment shader that reads oTN
+			// with no matching vertex output fails to link ("FRAGMENT varying
+			// oT5 does not match any VERTEX varying"), which renders the whole
+			// surface white. This bites the lightmappedgeneric bump combos,
+			// where the pixel shader reads oT5/oT6/oT7 tangent-space varyings
+			// that the paired vertex combo never wrote. Desktop GL tolerates
+			// it; GL ES does not.
+			//
+			// Declare the full oT0..oT7 set unconditionally (minus the one
+			// mapped to gl_Position) and zero-init the outputs the shader does
+			// not otherwise write, so the interface always matches and ANGLE
+			// cannot strip an unwritten output back out. centroid is dropped -
+			// it is only an MSAA hint and never affected link validity.
+			for ( int i=0; i<8; i++ )
 			{
 				char outTexCoordBuff[64];
 
 				// Don't declare a varying for the output that is mapped to the position output
 				if ( i != m_nVSPositionOutput )
 				{
-					if ( m_dwTexCoordOutMask & ( 0x00000001 << i ) )
+					V_snprintf( outTexCoordBuff, sizeof( outTexCoordBuff ), "out vec4 oT%d;\n", i );
+					StrcatToHeaderCode( outTexCoordBuff );
+
+					// Zero-init the ones the shader body does not write itself.
+					if ( ( m_dwTexCoordOutMask & ( 0x00000001 << i ) ) == 0 )
 					{
-						if ( m_nCentroidMask & ( 0x00000001 << i ) )
-						{
-							V_snprintf( outTexCoordBuff, sizeof( outTexCoordBuff ), "centroid out vec4 oT%d;\n", i ); // centroid varying
-							StrcatToHeaderCode( outTexCoordBuff );
-						}
-						else
-						{
-							V_snprintf( outTexCoordBuff, sizeof( outTexCoordBuff ), "out vec4 oT%d;\n", i );
-							StrcatToHeaderCode( outTexCoordBuff );
-						}
+						char initBuff[64];
+						V_snprintf( initBuff, sizeof( initBuff ), "\toT%d = vec4( 0.0 );\n", i );
+						StrcatToAttribCode( initBuff );
 					}
 				}
-			}			
+			}
 		}
 	}
 	else 
