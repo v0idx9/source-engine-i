@@ -703,6 +703,16 @@ void luasrc_LoadWeapons (const char *path)
 
 		lua_pushstring(L, LUA_BASE_WEAPON);
 		lua_setfield(L, -2, "__base");
+
+		// GMod SWEPs assume SWEP.Primary / SWEP.Secondary already exist as
+		// tables (their weapon base pre-creates them), then immediately do
+		// e.g. SWEP.Primary.ClipSize = -1. This engine hands the file a bare
+		// SWEP table, so seed the two sub-tables to match GMod's contract.
+		lua_newtable(L);
+		lua_setfield(L, -2, "Primary");
+		lua_newtable(L);
+		lua_setfield(L, -2, "Secondary");
+
 		lua_setglobal(L, "SWEP");
 
 		if (luasrc_dofile_vfs(L, filename, foundPathID) == 0)
