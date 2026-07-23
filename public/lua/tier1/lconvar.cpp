@@ -482,8 +482,43 @@ void ResetConVarDatabase( void )
 
 static const luaL_Reg ConVar_funcs[] = {
   {"ConVar", luasrc_ConVar},
+  {"CreateConVar", luasrc_ConVar},  // GMod alias: create-or-find a ConVar
   {NULL, NULL}
 };
+
+
+// GMod exposes the FCVAR_* flags as Lua globals so addons can pass them to
+// CreateConVar / util. Register the commonly used ones.
+static void RegisterFCVARGlobals (lua_State *L) {
+  static const struct { const char *name; int value; } s_FCVARs[] = {
+    { "FCVAR_NONE",              FCVAR_NONE },
+    { "FCVAR_UNREGISTERED",      FCVAR_UNREGISTERED },
+    { "FCVAR_DEVELOPMENTONLY",   FCVAR_DEVELOPMENTONLY },
+    { "FCVAR_GAMEDLL",           FCVAR_GAMEDLL },
+    { "FCVAR_CLIENTDLL",         FCVAR_CLIENTDLL },
+    { "FCVAR_HIDDEN",            FCVAR_HIDDEN },
+    { "FCVAR_PROTECTED",         FCVAR_PROTECTED },
+    { "FCVAR_SPONLY",            FCVAR_SPONLY },
+    { "FCVAR_ARCHIVE",           FCVAR_ARCHIVE },
+    { "FCVAR_NOTIFY",            FCVAR_NOTIFY },
+    { "FCVAR_USERINFO",          FCVAR_USERINFO },
+    { "FCVAR_PRINTABLEONLY",     FCVAR_PRINTABLEONLY },
+    { "FCVAR_UNLOGGED",          FCVAR_UNLOGGED },
+    { "FCVAR_NEVER_AS_STRING",   FCVAR_NEVER_AS_STRING },
+    { "FCVAR_REPLICATED",        FCVAR_REPLICATED },
+    { "FCVAR_CHEAT",             FCVAR_CHEAT },
+    { "FCVAR_DEMO",              FCVAR_DEMO },
+    { "FCVAR_DONTRECORD",        FCVAR_DONTRECORD },
+    { "FCVAR_NOT_CONNECTED",     FCVAR_NOT_CONNECTED },
+    { "FCVAR_SERVER_CAN_EXECUTE",    FCVAR_SERVER_CAN_EXECUTE },
+    { "FCVAR_SERVER_CANNOT_QUERY",   FCVAR_SERVER_CANNOT_QUERY },
+    { "FCVAR_CLIENTCMD_CAN_EXECUTE", FCVAR_CLIENTCMD_CAN_EXECUTE },
+  };
+  for ( size_t i = 0; i < sizeof(s_FCVARs)/sizeof(s_FCVARs[0]); ++i ) {
+    lua_pushinteger( L, s_FCVARs[i].value );
+    lua_setglobal( L, s_FCVARs[i].name );
+  }
+}
 
 
 /*
@@ -498,6 +533,7 @@ LUALIB_API int luaopen_ConVar (lua_State *L) {
   lua_setfield(L, -2, "__type");  /* metatable.__type = "convar" */
   luaL_register(L, "_G", ConVar_funcs);
   lua_pop(L, 1);
+  RegisterFCVARGlobals(L);
   return 1;
 }
 
