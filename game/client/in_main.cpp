@@ -949,7 +949,7 @@ void CInput::ControllerMove( float frametime, CUserCmd *cmd )
 
 	JoyStickMove( frametime, cmd);
 
-	if (IsAndroid())
+	if (IsAndroid() || IsIOS())
 		TouchMove( cmd );
 
 	// NVNT if we have a haptic device..
