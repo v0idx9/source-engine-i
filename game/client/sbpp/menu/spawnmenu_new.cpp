@@ -1987,7 +1987,12 @@ void CSpawnMenu::CreateTabs()
 	}
 }
 
-#ifdef ANDROID
+// NOTE: this local TOUCH_DEFAULT gates what touch_enable is restored to when
+// the spawn menu is closed. It only branched on ANDROID, so on iOS OnTick()
+// hammered touch_enable to "0" every tick, disabling all on-screen controls
+// in-game. Keep this in sync with touch.cpp's TOUCH_DEFAULT (iOS is touch-only
+// too).
+#if defined( ANDROID ) || defined( IOS ) || defined( _IOS )
 #define TOUCH_DEFAULT "1"
 #else
 #define TOUCH_DEFAULT "0"
