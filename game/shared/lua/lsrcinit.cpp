@@ -347,6 +347,14 @@ do
       end
     end
   end
+
+  -- weapon methods: SetHoldType drives player hold animations, which this
+  -- engine does not expose; store it as a no-op so SWEP:Initialize completes.
+  local WEP = reg and reg.CBaseCombatWeapon or nil
+  if WEP then
+    if WEP.SetHoldType == nil then function WEP:SetHoldType( t ) self.__holdtype = t end end
+    if WEP.GetHoldType == nil then function WEP:GetHoldType() return self.__holdtype or "normal" end end
+  end
 end
 
 -- player library (enumeration)
