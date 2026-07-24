@@ -304,12 +304,19 @@ do
     if ENT.Health == nil and ENT.GetHealth ~= nil then function ENT:Health() return self:GetHealth() end end
     if ENT.EntIndex == nil and ENT.entindex ~= nil then function ENT:EntIndex() return self:entindex() end end
     if ENT.TakeDamageInfo == nil and ENT.TakeDamage ~= nil then
-      function ENT:TakeDamageInfo( info ) return self:TakeDamage( info ) end
+      function ENT:TakeDamageInfo( info )
+        if print and self.GetClass then print( "[gmodcompat] TakeDamageInfo on " .. tostring( self:GetClass() ) ) end
+        return self:TakeDamage( info )
+      end
     end
     if ENT.Dissolve == nil and effect ~= nil and effect.Dissolve ~= nil then
       -- GMod addons call ent:Dissolve(...); wrap the engine's effect.Dissolve
-      -- (their argument order does not map, so ignore it and use sane defaults).
-      function ENT:Dissolve() effect.Dissolve( self, "", CurTime and CurTime() or 0, 0 ) end
+      -- (their argument order does not map, so ignore it and use a real
+      -- dissolve sprite so it is actually visible).
+      function ENT:Dissolve()
+        if print and self.GetClass then print( "[gmodcompat] Dissolve on " .. tostring( self:GetClass() ) ) end
+        effect.Dissolve( self, "sprites/blueglow1.vmt", CurTime and CurTime() or 0, 0 )
+      end
     end
 
     -- Networked vars: stored per-entity (per realm). This is enough for
