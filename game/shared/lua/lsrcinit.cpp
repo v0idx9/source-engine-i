@@ -309,7 +309,7 @@ do
     if ENT.Dissolve == nil and effect ~= nil and effect.Dissolve ~= nil then
       -- GMod addons call ent:Dissolve(...); wrap the engine's effect.Dissolve
       -- (their argument order does not map, so ignore it and use sane defaults).
-      function ENT:Dissolve() effect.Dissolve( self, "", 0, 0 ) end
+      function ENT:Dissolve() effect.Dissolve( self, "", CurTime and CurTime() or 0, 0 ) end
     end
 
     -- Networked vars: stored per-entity (per realm). This is enough for
@@ -373,6 +373,65 @@ do
     if WEP.ShootEffects == nil then function WEP:ShootEffects() end end
     if WEP.SendWeaponAnim == nil then function WEP:SendWeaponAnim() end end
   end
+
+  -- ==== GMod name -> native Source method aliases ====
+  -- Most engine methods exist under their Source (C++) names; GMod addons use
+  -- different names. Alias the common ones (only when the GMod name is absent
+  -- so base content / natives always win).
+  local function alias( meta, gmod, native )
+    if meta and meta[gmod] == nil and meta[native] ~= nil then meta[gmod] = meta[native] end
+  end
+  if ENT then
+    alias( ENT, "GetPos", "GetAbsOrigin" );        alias( ENT, "SetPos", "SetAbsOrigin" )
+    alias( ENT, "GetAngles", "GetAbsAngles" );     alias( ENT, "SetAngles", "SetAbsAngles" )
+    alias( ENT, "GetClass", "GetClassname" )
+    alias( ENT, "GetModel", "GetModelName" )
+    alias( ENT, "GetVelocity", "GetAbsVelocity" ); alias( ENT, "SetVelocity", "SetAbsVelocity" )
+    alias( ENT, "GetOwner", "GetOwnerEntity" );    alias( ENT, "SetOwner", "SetOwnerEntity" )
+    alias( ENT, "GetParent", "GetMoveParent" )
+    alias( ENT, "WorldToLocal", "WorldToEntitySpace" ); alias( ENT, "LocalToWorld", "EntityToWorldSpace" )
+    alias( ENT, "SetKeyValue", "KeyValue" )
+    alias( ENT, "Input", "AcceptInput" )
+    -- type/boolean helpers already native: IsNPC, IsPlayer, IsWeapon, IsWorld,
+    -- IsSolid, IsMarkedForDeletion, IsInWorld, IsDormant, GetName(entity).
+    if ENT.GetForward == nil and ENT.GetVectors ~= nil then
+      function ENT:GetForward() local f,r,u = Vector(0,0,0), Vector(0,0,0), Vector(0,0,0) self:GetVectors( f, r, u ) return f end
+      function ENT:GetRight()   local f,r,u = Vector(0,0,0), Vector(0,0,0), Vector(0,0,0) self:GetVectors( f, r, u ) return r end
+      function ENT:GetUp()      local f,r,u = Vector(0,0,0), Vector(0,0,0), Vector(0,0,0) self:GetVectors( f, r, u ) return u end
+    end
+    if ENT.SetColor == nil and ENT.SetRenderColor ~= nil then
+      function ENT:SetColor( c )
+        if c == nil then return end
+        self:SetRenderColor( c.r or 255, c.g or 255, c.b or 255 )
+        if self.SetRenderColorA and c.a then self:SetRenderColorA( c.a ) end
+      end
+    end
+    if ENT.SetNoDraw == nil and ENT.AddEffects ~= nil and ENT.RemoveEffects ~= nil then
+      function ENT:SetNoDraw( b ) if b then self:AddEffects( 32 ) else self:RemoveEffects( 32 ) end end -- EF_NODRAW
+    end
+    if ENT.GetTable == nil then function ENT:GetTable() self.__t = self.__t or {} return self.__t end end
+  end
+  if PLY then
+    alias( PLY, "Nick", "GetPlayerName" ); alias( PLY, "Name", "GetPlayerName" )
+    alias( PLY, "SteamID", "GetNetworkIDString" ); alias( PLY, "SteamID64", "GetNetworkIDString" )
+    alias( PLY, "UserID", "GetUserID" )
+    alias( PLY, "Team", "GetTeamNumber" )
+    alias( PLY, "Give", "GiveNamedItem" )
+    alias( PLY, "StripWeapon", "RemovePlayerItem" )
+    alias( PLY, "GetEyeAngles", "EyeAngles" )
+    if PLY.KeyDown == nil then
+      function PLY:KeyDown( b )
+        local n = self.m_nButtons or 0
+        if bit and bit.band then return bit.band( n, b ) ~= 0 end
+        return ( n % ( b * 2 ) ) >= b
+      end
+    end
+    if PLY.IsAdmin == nil then function PLY:IsAdmin() return true end end       -- listen-server host
+    if PLY.IsSuperAdmin == nil then function PLY:IsSuperAdmin() return true end end
+  end
+  if WEP then
+    alias( WEP, "GetPrimaryClip", "Clip1" ); alias( WEP, "GetSecondaryClip", "Clip2" )
+  end
 end
 
 -- movetype enums (Source MoveType_t values)
@@ -398,10 +457,63 @@ if DMG_DISSOLVE == nil then
   DMG_DIRECT = 268435456; DMG_BUCKSHOT = 536870912
 end
 
--- ents library (entity creation / lookup)
+-- ents library (entity creation / lookup), backed by native util.* helpers
 if ents == nil then ents = {} end
 if ents.Create == nil and CreateEntityByName ~= nil then ents.Create = function( cls ) return CreateEntityByName( cls ) end end
-ents.FindInSphere = ents.FindInSphere or function() return {} end
+if ents.FindInSphere == nil then
+  ents.FindInSphere = function( pos, radius )
+    if util and util.EntitiesInSphere then return util.EntitiesInSphere( pos, radius ) end
+    return {}
+  end
+end
+if ents.FindInBox == nil and util ~= nil and util.EntitiesInBox ~= nil then
+  ents.FindInBox = function( mins, maxs ) return util.EntitiesInBox( mins, maxs ) end
+end
+if ents.GetByIndex == nil and util ~= nil and util.EntityByIndex ~= nil then
+  ents.GetByIndex = function( i ) return util.EntityByIndex( i ) end
+end
+if ents.FindByClass == nil then
+  ents.FindByClass = function( cls )
+    local out, i = {}, 1
+    if not ents.GetByIndex then return out end
+    for idx = 1, 8192 do
+      local e = ents.GetByIndex( idx )
+      if e and IsValid( e ) and e.GetClass and e:GetClass() == cls then out[i] = e i = i + 1 end
+    end
+    return out
+  end
+end
+
+-- input button bits (Source IN_*)
+if IN_ATTACK == nil then
+  IN_ATTACK = 1; IN_JUMP = 2; IN_DUCK = 4; IN_FORWARD = 8; IN_BACK = 16
+  IN_USE = 32; IN_CANCEL = 64; IN_LEFT = 128; IN_RIGHT = 256; IN_MOVELEFT = 512
+  IN_MOVERIGHT = 1024; IN_ATTACK2 = 2048; IN_RUN = 4096; IN_RELOAD = 8192
+  IN_ALT1 = 16384; IN_ALT2 = 32768; IN_SCORE = 65536; IN_SPEED = 131072
+  IN_WALK = 262144; IN_ZOOM = 524288; IN_WEAPON1 = 1048576; IN_WEAPON2 = 2097152
+  IN_BULLRUSH = 4194304; IN_GRENADE1 = 8388608; IN_GRENADE2 = 16777216
+end
+
+-- effect flags (EF_*), collision groups, solid types, move-collide
+if EF_NODRAW == nil then
+  EF_BONEMERGE = 1; EF_BRIGHTLIGHT = 2; EF_DIMLIGHT = 4; EF_NOINTERP = 8
+  EF_NOSHADOW = 16; EF_NODRAW = 32; EF_NORECEIVESHADOW = 64; EF_ITEM_BLINK = 256
+  EF_PARENT_ANIMATES = 512
+end
+if COLLISION_GROUP_NONE == nil then
+  COLLISION_GROUP_NONE = 0; COLLISION_GROUP_DEBRIS = 1; COLLISION_GROUP_INTERACTIVE = 3
+  COLLISION_GROUP_PLAYER = 5; COLLISION_GROUP_WEAPON = 12; COLLISION_GROUP_VEHICLE = 6
+  COLLISION_GROUP_PLAYER_MOVEMENT = 8; COLLISION_GROUP_WORLD = 15
+end
+if SOLID_NONE == nil then
+  SOLID_NONE = 0; SOLID_BSP = 1; SOLID_BBOX = 2; SOLID_OBB = 3; SOLID_OBB_YAW = 4
+  SOLID_CUSTOM = 5; SOLID_VPHYSICS = 6
+end
+if MASK_SOLID == nil then
+  MASK_ALL = 4294967295; MASK_SOLID = 33570827; MASK_SHOT = 1174421507
+  MASK_PLAYERSOLID = 33636363; MASK_NPCSOLID = 33701899; MASK_OPAQUE = 16513
+  MASK_SOLID_BRUSHONLY = 16395; MASK_SHOT_HULL = 100679691
+end
 
 -- player library (enumeration)
 if player == nil then player = {} end
@@ -498,12 +610,38 @@ if CLIENT then
 end
 )GLUACOMPAT";
 
+// Time globals. GMod addons call these constantly (often unguarded), but the
+// engine exposes no Lua binding for them, so read gpGlobals directly.
+static int luasrc_CurTime( lua_State *L )     { lua_pushnumber( L, gpGlobals->curtime ); return 1; }
+static int luasrc_RealTime( lua_State *L )    { lua_pushnumber( L, gpGlobals->realtime ); return 1; }
+static int luasrc_FrameTime( lua_State *L )   { lua_pushnumber( L, gpGlobals->frametime ); return 1; }
+static int luasrc_TickInterval( lua_State *L ){ lua_pushnumber( L, gpGlobals->interval_per_tick ); return 1; }
+static int luasrc_TickCount( lua_State *L )   { lua_pushinteger( L, gpGlobals->tickcount ); return 1; }
+static int luasrc_SysTime( lua_State *L )     { lua_pushnumber( L, Plat_FloatTime() ); return 1; }
+
+static const luaL_Reg s_GModTimeGlobals[] = {
+  { "CurTime", luasrc_CurTime },
+  { "RealTime", luasrc_RealTime },
+  { "FrameTime", luasrc_FrameTime },
+  { "TickInterval", luasrc_TickInterval },
+  { "TickCount", luasrc_TickCount },
+  { "SysTime", luasrc_SysTime },
+  { NULL, NULL }
+};
+
 LUALIB_API void luasrc_openlibs (lua_State *L) {
   const luaL_Reg *lib = luasrclibs;
   for (; lib->func; lib++) {
     lua_pushcfunction(L, lib->func);
     lua_pushstring(L, lib->name);
     lua_call(L, 1, 0);
+  }
+
+  // Time globals (CurTime/FrameTime/...) into _G.
+  for ( const luaL_Reg *t = s_GModTimeGlobals; t->name; t++ )
+  {
+    lua_pushcfunction( L, t->func );
+    lua_setglobal( L, t->name );
   }
 
   // Fill in the GMod stdlib gaps after the native libraries are registered.
