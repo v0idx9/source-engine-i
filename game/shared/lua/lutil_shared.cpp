@@ -300,3 +300,23 @@ LUALIB_API int luaopen_UTIL_shared (lua_State *L) {
   return 1;
 }
 
+// Force the shared util functions (TraceLine, EntitiesInSphere,
+// AddNetworkString, ...) onto the global util table. The normal
+// luaL_register path through luaopen_UTIL_shared was not making them
+// reachable at runtime, so set each field directly (this is what addons and
+// the GMod-compat shims rely on, e.g. util.TraceLine's GMod table form).
+LUALIB_API void luasrc_EnsureGModUtil (lua_State *L) {
+  lua_getglobal(L, LUA_UTILLIBNAME);
+  if (!lua_istable(L, -1)) {
+    lua_pop(L, 1);
+    lua_newtable(L);
+    lua_pushvalue(L, -1);
+    lua_setglobal(L, LUA_UTILLIBNAME);
+  }
+  for (const luaL_Reg *r = util_funcs; r->name; r++) {
+    lua_pushcfunction(L, r->func);
+    lua_setfield(L, -2, r->name);
+  }
+  lua_pop(L, 1);
+}
+

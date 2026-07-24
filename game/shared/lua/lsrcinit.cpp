@@ -343,7 +343,7 @@ do
         return f
       end
     end
-    if PLY.GetEyeTrace == nil and util ~= nil and util.TraceLine ~= nil then
+    if PLY.GetEyeTrace == nil then
       function PLY:GetEyeTrace()
         local s = self:EyePosition()
         return util.TraceLine( { start = s, endpos = s + self:GetAimVector() * 32768, filter = self } )
@@ -534,14 +534,13 @@ do
   local out = print or Msg
   if out then
     out( "[gmodcompat] realm=" .. ( SERVER and "server" or "client" ) ..
-         " CurTime=" .. tostring( CurTime ~= nil ) ..
+         " util.TraceLine=" .. tostring( util and util.TraceLine ~= nil ) ..
+         " util.EntsInSphere=" .. tostring( util and util.EntitiesInSphere ~= nil ) ..
          " DamageInfo=" .. tostring( DamageInfo ~= nil ) ..
          " effect=" .. tostring( effect ~= nil ) ..
          " ENT.TakeDamageInfo=" .. tostring( E.TakeDamageInfo ~= nil ) ..
          " ENT.Dissolve=" .. tostring( E.Dissolve ~= nil ) ..
-         " ENT.GetClass=" .. tostring( E.GetClass ~= nil ) ..
-         " PLY.GetEyeTrace=" .. tostring( P.GetEyeTrace ~= nil ) ..
-         " PLY.GetAimVector=" .. tostring( P.GetAimVector ~= nil ) .. "\n" )
+         " PLY.GetEyeTrace=" .. tostring( P.GetEyeTrace ~= nil ) .. "\n" )
   end
 end
 
@@ -662,6 +661,12 @@ LUALIB_API void luasrc_openlibs (lua_State *L) {
     lua_pushcfunction( L, t->func );
     lua_setglobal( L, t->name );
   }
+
+  // The shared util functions (TraceLine, EntitiesInSphere, AddNetworkString,
+  // ...) were not reaching the util table via luaopen_UTIL_shared; force them
+  // on now so the GMod-compat shims and addons can use them.
+  extern void luasrc_EnsureGModUtil( lua_State *L );
+  luasrc_EnsureGModUtil( L );
 
   // Fill in the GMod stdlib gaps after the native libraries are registered.
   if ( luaL_dostring( L, s_pGModCompatPrelude ) != 0 )
