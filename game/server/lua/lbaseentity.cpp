@@ -313,15 +313,14 @@ static int CBaseEntity_TakeDamage (lua_State *L) {
   return 0;
 }
 
-// GMod-compatible Entity:Dissolve(). The engine's real dissolve lives on
-// CBaseAnimating, but every Lua entity uses the flat CBaseEntity metatable, so
-// we expose it here. For NPCs we force the ELECTRICAL type -- that is the only
-// path in CEntityDissolve::Create that spawns a dissolving ragdoll and removes
-// the original entity (the "evaporate" the fizzler expects); the NORMAL type
-// merely attaches a sprite to the still-living NPC, which is why the NPC used
-// to just turn and aggro instead of dissolving. Props use the NORMAL type.
-// Any positional args addons pass (e.g. Dissolve(0,0,pos,0)) are intentionally
-// ignored so the effect/type are always chosen correctly here.
+// Entity:Dissolve() -- matches the GMod API exactly:
+//   Entity:Dissolve( number type = 0, number magnitude = 0,
+//                    Vector origin = self:GetPos(), number delay = 0 )
+// The engine's real dissolve lives on CBaseAnimating, but every Lua entity uses
+// the flat CBaseEntity metatable, so we expose it here and forward each argument
+// through to CBaseAnimating::Dissolve. The caller chooses the dissolve type --
+// we do not override it based on the entity, so mods that want a specific type
+// (or dissolve type on any entity) get exactly what they asked for.
 static int CBaseEntity_Dissolve (lua_State *L) {
   CBaseEntity *pEntity = luaL_checkentity(L, 1);
   CBaseAnimating *pAnim = dynamic_cast<CBaseAnimating *>( pEntity );
@@ -329,8 +328,14 @@ static int CBaseEntity_Dissolve (lua_State *L) {
     lua_pushboolean(L, 0);
     return 1;
   }
-  int nType = pEntity->IsNPC() ? ENTITY_DISSOLVE_ELECTRICAL : ENTITY_DISSOLVE_NORMAL;
-  bool bOK = pAnim->Dissolve( NULL, gpGlobals->curtime, false, nType, pEntity->GetAbsOrigin(), 0 );
+  int    nType  = luaL_optint( L, 2, ENTITY_DISSOLVE_NORMAL );
+  int    iMag   = luaL_optint( L, 3, 0 );
+  Vector vDef   = pEntity->GetAbsOrigin();
+  Vector vOrig  = luaL_optvector( L, 4, &vDef );
+  float  flDly  = luaL_optnumber( L, 5, 0.0f );
+  // bNPCOnly=false: honour the call for props and NPCs alike (GMod does not
+  // restrict Entity:Dissolve to NPCs).
+  bool bOK = pAnim->Dissolve( NULL, gpGlobals->curtime + flDly, false, nType, vOrig, iMag );
   lua_pushboolean(L, bOK);
   return 1;
 }

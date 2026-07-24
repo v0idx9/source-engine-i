@@ -305,22 +305,12 @@ do
     if ENT.EntIndex == nil and ENT.entindex ~= nil then function ENT:EntIndex() return self:entindex() end end
     if ENT.TakeDamageInfo == nil and ENT.TakeDamage ~= nil then
       function ENT:TakeDamageInfo( info )
-        local dt = ( info and info.GetDamageType ) and info:GetDamageType() or 0
+        -- GMod's Entity:TakeDamageInfo maps onto the engine's TakeDamage. Death
+        -- by DMG_DISSOLVE (the fizzler/combine-ball "evaporate") is handled
+        -- generally by CBaseCombatCharacter::Event_Killed, so a lethal
+        -- DMG_DISSOLVE hit dissolves the NPC on its own -- no special-casing
+        -- here, which keeps this correct for every addon, not just one.
         self:TakeDamage( info )
-        -- DMG_DISSOLVE (1<<26 = 67108864) means "evaporate the victim". Route
-        -- through the native Entity:Dissolve (electrical for NPCs -> the engine
-        -- spawns a dissolving ragdoll and removes the original NPC). Doing it
-        -- explicitly here -- and via the metatable method rather than the global
-        -- 'effect' table -- means it survives base content reloading globals,
-        -- which is why the NPC used to just aggro instead of dissolving. Bit
-        -- test done with plain math so it needs no bit library.
-        if math.floor( dt / 67108864 ) % 2 >= 1 and IsValid( self ) then
-          if self.Dissolve then
-            self:Dissolve()
-          elseif effect and effect.Dissolve then
-            effect.Dissolve( self, "sprites/blueglow1.vmt", CurTime and CurTime() or 0, ( self.IsNPC and self:IsNPC() ) and 1 or 0 )
-          end
-        end
       end
     end
     if ENT.Dissolve == nil and effect ~= nil and effect.Dissolve ~= nil then
