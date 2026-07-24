@@ -309,18 +309,7 @@ static int CBaseEntity_OnTakeDamage (lua_State *L) {
 }
 
 static int CBaseEntity_TakeDamage (lua_State *L) {
-  CBaseEntity *pEntity = luaL_checkentity(L, 1);
-  CTakeDamageInfo &info = luaL_checkdamageinfo(L, 2);
-  // [fizzdbg] TEMP: ground-truth of what the engine actually receives, so we can
-  // see whether the scripted damage/type persisted and whether it was lethal.
-  int hpBefore = pEntity->GetHealth();
-  Msg( "[fizzdbg] TakeDamage cls=%s takedamage=%d hp=%d dmg=%.1f dt=%d attacker=%s\n",
-       pEntity->GetClassname(), (int)pEntity->m_takedamage, hpBefore,
-       info.GetDamage(), info.GetDamageType(),
-       info.GetAttacker() ? info.GetAttacker()->GetClassname() : "NULL" );
-  pEntity->TakeDamage( info );
-  Msg( "[fizzdbg] TakeDamage post cls=%s hp=%d->%d\n",
-       pEntity->GetClassname(), hpBefore, pEntity->GetHealth() );
+  luaL_checkentity(L, 1)->TakeDamage(luaL_checkdamageinfo(L, 2));
   return 0;
 }
 
@@ -347,8 +336,6 @@ static int CBaseEntity_Dissolve (lua_State *L) {
   // bNPCOnly=false: honour the call for props and NPCs alike (GMod does not
   // restrict Entity:Dissolve to NPCs).
   bool bOK = pAnim->Dissolve( NULL, gpGlobals->curtime + flDly, false, nType, vOrig, iMag );
-  // [fizzdbg] TEMP
-  Msg( "[fizzdbg] Dissolve cls=%s type=%d ok=%d\n", pEntity->GetClassname(), nType, (int)bOK );
   lua_pushboolean(L, bOK);
   return 1;
 }

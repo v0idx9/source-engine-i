@@ -230,6 +230,60 @@ if hook == nil and (package == nil or package.loaded == nil or package.loaded.ho
   if package and package.loaded then package.loaded.hook = H end
 end
 
+-- timer: GMod's timer library does not exist on this engine, so addons that
+-- schedule delayed work (the fizzler dissolves ragdolls via timer.Simple, many
+-- SWEPs use timer.Create) errored on a nil global. Implement it here, driven by
+-- __sbpp_RunTimers() which the engine calls once per server frame (GameFrame).
+if timer == nil then
+  local simple, named = {}, {}
+  local T = {}
+  local function now() return CurTime and CurTime() or 0 end
+  function T.Simple( delay, fn )
+    if type( fn ) ~= "function" then return end
+    simple[#simple + 1] = { at = now() + ( tonumber( delay ) or 0 ), fn = fn }
+  end
+  function T.Create( name, delay, reps, fn )
+    if type( fn ) ~= "function" then return end
+    named[name] = { delay = tonumber( delay ) or 0, reps = tonumber( reps ) or 0,
+                    fn = fn, at = now() + ( tonumber( delay ) or 0 ), n = 0, paused = false }
+  end
+  T.Adjust = function( name, delay, reps, fn )
+    local t = named[name]; if not t then return false end
+    t.delay = tonumber( delay ) or t.delay
+    if reps ~= nil then t.reps = tonumber( reps ) or t.reps end
+    if fn ~= nil then t.fn = fn end
+    return true
+  end
+  function T.Remove( name ) named[name] = nil end
+  T.Destroy = T.Remove
+  function T.Exists( name ) return named[name] ~= nil end
+  function T.Start( name ) local t = named[name]; if t then t.paused = false; t.at = now() + t.delay end return t ~= nil end
+  function T.Stop( name ) local t = named[name]; if t then t.paused = true end return t ~= nil end
+  T.Pause = T.Stop
+  function T.UnPause( name ) local t = named[name]; if t then t.paused = false end return t ~= nil end
+  function T.Toggle( name ) local t = named[name]; if t then t.paused = not t.paused end return t ~= nil end
+  function T.TimeLeft( name ) local t = named[name]; if not t then return nil end return t.at - now() end
+  function T.RepsLeft( name ) local t = named[name]; if not t then return nil end return t.reps == 0 and 0 or ( t.reps - t.n ) end
+  timer = T
+
+  function __sbpp_RunTimers()
+    local t = now()
+    local i = 1
+    while i <= #simple do
+      local e = simple[i]
+      if t >= e.at then table.remove( simple, i ); pcall( e.fn ) else i = i + 1 end
+    end
+    for name, e in pairs( named ) do
+      if not e.paused and t >= e.at then
+        e.n = e.n + 1
+        pcall( e.fn )
+        if e.reps ~= 0 and e.n >= e.reps then named[name] = nil
+        else e.at = t + e.delay end
+      end
+    end
+  end
+end
+
 -- sound registration (playback still uses the engine directly)
 if sound == nil then sound = {} end
 sound.Add = sound.Add or function() end

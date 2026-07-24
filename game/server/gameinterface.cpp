@@ -1278,6 +1278,20 @@ void CServerGameDLL::GameFrame( bool simulating )
 
 	float oldframetime = gpGlobals->frametime;
 
+#if defined ( LUA_SDK )
+	// Drive the GMod-compat timer library (timer.Simple / timer.Create) once per
+	// server frame. Called directly rather than through the hook macro, which
+	// looks up hook.call (lowercase) and would miss the GMod-cased hook table.
+	if ( L )
+	{
+		lua_getglobal( L, "__sbpp_RunTimers" );
+		if ( lua_isfunction( L, -1 ) )
+			luasrc_pcall( L, 0, 0, 0 );
+		else
+			lua_pop( L, 1 );
+	}
+#endif
+
 #ifdef _DEBUG
 	// For profiling.. let them enable/disable the networkvar manual mode stuff.
 	g_bUseNetworkVars = s_UseNetworkVars.GetBool();
