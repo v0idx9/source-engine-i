@@ -74,7 +74,70 @@ static int luasrc_SharedRandomAngle (lua_State *L) {
   return 1;
 }
 
+// Build a GMod-style trace result table from a completed trace.
+static void PushGModTraceResult( lua_State *L, const trace_t &tr, const Vector &vStart, const Vector &vEnd )
+{
+  lua_newtable( L );
+
+  lua_pushboolean( L, tr.DidHit() );                 lua_setfield( L, -2, "Hit" );
+  lua_pushnumber ( L, tr.fraction );                 lua_setfield( L, -2, "Fraction" );
+  lua_pushnumber ( L, tr.fractionleftsolid );        lua_setfield( L, -2, "FractionLeftSolid" );
+  lua_pushboolean( L, tr.allsolid );                 lua_setfield( L, -2, "AllSolid" );
+  lua_pushboolean( L, tr.startsolid );               lua_setfield( L, -2, "StartSolid" );
+  lua_pushinteger( L, tr.hitgroup );                 lua_setfield( L, -2, "HitGroup" );
+  lua_pushinteger( L, tr.hitbox );                   lua_setfield( L, -2, "HitBox" );
+  lua_pushinteger( L, tr.physicsbone );              lua_setfield( L, -2, "PhysicsBone" );
+  lua_pushinteger( L, tr.contents );                 lua_setfield( L, -2, "Contents" );
+
+  Vector vEndPos = tr.endpos;      lua_pushvector( L, vEndPos ); lua_setfield( L, -2, "HitPos" );
+  Vector vNormal = tr.plane.normal;lua_pushvector( L, vNormal ); lua_setfield( L, -2, "HitNormal" );
+  Vector vStartOut = vStart;       lua_pushvector( L, vStartOut ); lua_setfield( L, -2, "StartPos" );
+  Vector vDir = vEnd - vStart; VectorNormalize( vDir );
+  lua_pushvector( L, vDir );        lua_setfield( L, -2, "Normal" );
+
+  lua_pushentity( L, tr.m_pEnt );                    lua_setfield( L, -2, "Entity" );
+  lua_pushboolean( L, tr.DidHitWorld() );            lua_setfield( L, -2, "HitWorld" );
+  lua_pushboolean( L, tr.DidHitNonWorldEntity() );   lua_setfield( L, -2, "HitNonWorld" );
+
+  if ( tr.surface.name ) { lua_pushstring( L, tr.surface.name ); lua_setfield( L, -2, "HitTexture" ); }
+  lua_pushinteger( L, tr.surface.flags );            lua_setfield( L, -2, "SurfaceFlags" );
+  lua_pushinteger( L, tr.surface.surfaceProps );     lua_setfield( L, -2, "SurfaceProps" );
+}
+
 static int luasrc_UTIL_TraceLine (lua_State *L) {
+  // GMod form: util.TraceLine({ start=, endpos=, filter=, mask=, collisiongroup= })
+  // returns a result table. This is what virtually all addons use.
+  if ( lua_istable( L, 1 ) )
+  {
+    lua_getfield( L, 1, "start" );  int iStart = lua_gettop( L );
+    Vector vStart = luaL_checkvector( L, iStart );
+    lua_getfield( L, 1, "endpos" ); int iEnd = lua_gettop( L );
+    Vector vEnd = luaL_checkvector( L, iEnd );
+
+    int mask = MASK_SOLID;
+    lua_getfield( L, 1, "mask" );
+    if ( lua_isnumber( L, -1 ) ) mask = (int)lua_tointeger( L, -1 );
+    lua_pop( L, 1 );
+
+    int collgroup = COLLISION_GROUP_NONE;
+    lua_getfield( L, 1, "collisiongroup" );
+    if ( lua_isnumber( L, -1 ) ) collgroup = (int)lua_tointeger( L, -1 );
+    lua_pop( L, 1 );
+
+    CBaseEntity *pIgnore = NULL;
+    lua_getfield( L, 1, "filter" );
+    if ( lua_isuserdata( L, -1 ) ) pIgnore = lua_toentity( L, -1 );
+    lua_pop( L, 1 );
+
+    trace_t tr;
+    UTIL_TraceLine( vStart, vEnd, mask, pIgnore, collgroup, &tr );
+
+    lua_pop( L, 2 ); // start, endpos temporaries
+    PushGModTraceResult( L, tr, vStart, vEnd );
+    return 1;
+  }
+
+  // Legacy positional form: (start, end, mask, ignore, collisionGroup, traceOut)
   UTIL_TraceLine(luaL_checkvector(L, 1), luaL_checkvector(L, 2), luaL_checkint(L, 3), lua_toentity(L, 4), luaL_checkint(L, 5), &luaL_checktrace(L, 6));
   return 0;
 }

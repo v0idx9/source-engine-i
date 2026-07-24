@@ -526,6 +526,25 @@ if IsFirstTimePredicted == nil then function IsFirstTimePredicted() return true 
 if table.IsEmpty == nil then function table.IsEmpty( t ) return next( t ) == nil end end
 if table.Empty == nil then function table.Empty( t ) for k in pairs( t ) do t[k] = nil end end end
 
+-- One-time boot diagnostic: report what the compat layer actually resolved on
+-- this realm, so device logs can confirm the metatable shims landed.
+do
+  local rg = ( debug and debug.getregistry ) and debug.getregistry() or {}
+  local E, P = rg.CBaseEntity or {}, rg.CBasePlayer or {}
+  local out = print or Msg
+  if out then
+    out( "[gmodcompat] realm=" .. ( SERVER and "server" or "client" ) ..
+         " CurTime=" .. tostring( CurTime ~= nil ) ..
+         " DamageInfo=" .. tostring( DamageInfo ~= nil ) ..
+         " effect=" .. tostring( effect ~= nil ) ..
+         " ENT.TakeDamageInfo=" .. tostring( E.TakeDamageInfo ~= nil ) ..
+         " ENT.Dissolve=" .. tostring( E.Dissolve ~= nil ) ..
+         " ENT.GetClass=" .. tostring( E.GetClass ~= nil ) ..
+         " PLY.GetEyeTrace=" .. tostring( P.GetEyeTrace ~= nil ) ..
+         " PLY.GetAimVector=" .. tostring( P.GetAimVector ~= nil ) .. "\n" )
+  end
+end
+
 -- server/shared prop-management shims (no-op where unsupported)
 if cleanup == nil then
   cleanup = {}
