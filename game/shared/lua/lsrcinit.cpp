@@ -307,13 +307,19 @@ do
       function ENT:TakeDamageInfo( info )
         local dt = ( info and info.GetDamageType ) and info:GetDamageType() or 0
         self:TakeDamage( info )
-        -- DMG_DISSOLVE (1<<26 = 67108864) means "dissolve the victim". The
-        -- engine's electrical dissolve creates a ragdoll, kills the NPC and
-        -- dissolves it (removing the original), so it works regardless of the
-        -- plain damage path. Do it explicitly here since addons rely on it.
-        -- Bit test done with plain math so it needs no bit library.
-        if effect and effect.Dissolve and math.floor( dt / 67108864 ) % 2 >= 1 then
-          effect.Dissolve( self, "sprites/blueglow1.vmt", CurTime and CurTime() or 0, 1 )
+        -- DMG_DISSOLVE (1<<26 = 67108864) means "evaporate the victim". Route
+        -- through the native Entity:Dissolve (electrical for NPCs -> the engine
+        -- spawns a dissolving ragdoll and removes the original NPC). Doing it
+        -- explicitly here -- and via the metatable method rather than the global
+        -- 'effect' table -- means it survives base content reloading globals,
+        -- which is why the NPC used to just aggro instead of dissolving. Bit
+        -- test done with plain math so it needs no bit library.
+        if math.floor( dt / 67108864 ) % 2 >= 1 and IsValid( self ) then
+          if self.Dissolve then
+            self:Dissolve()
+          elseif effect and effect.Dissolve then
+            effect.Dissolve( self, "sprites/blueglow1.vmt", CurTime and CurTime() or 0, ( self.IsNPC and self:IsNPC() ) and 1 or 0 )
+          end
         end
       end
     end

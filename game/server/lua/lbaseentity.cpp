@@ -313,6 +313,28 @@ static int CBaseEntity_TakeDamage (lua_State *L) {
   return 0;
 }
 
+// GMod-compatible Entity:Dissolve(). The engine's real dissolve lives on
+// CBaseAnimating, but every Lua entity uses the flat CBaseEntity metatable, so
+// we expose it here. For NPCs we force the ELECTRICAL type -- that is the only
+// path in CEntityDissolve::Create that spawns a dissolving ragdoll and removes
+// the original entity (the "evaporate" the fizzler expects); the NORMAL type
+// merely attaches a sprite to the still-living NPC, which is why the NPC used
+// to just turn and aggro instead of dissolving. Props use the NORMAL type.
+// Any positional args addons pass (e.g. Dissolve(0,0,pos,0)) are intentionally
+// ignored so the effect/type are always chosen correctly here.
+static int CBaseEntity_Dissolve (lua_State *L) {
+  CBaseEntity *pEntity = luaL_checkentity(L, 1);
+  CBaseAnimating *pAnim = dynamic_cast<CBaseAnimating *>( pEntity );
+  if ( pAnim == NULL ) {
+    lua_pushboolean(L, 0);
+    return 1;
+  }
+  int nType = pEntity->IsNPC() ? ENTITY_DISSOLVE_ELECTRICAL : ENTITY_DISSOLVE_NORMAL;
+  bool bOK = pAnim->Dissolve( NULL, gpGlobals->curtime, false, nType, pEntity->GetAbsOrigin(), 0 );
+  lua_pushboolean(L, bOK);
+  return 1;
+}
+
 static int CBaseEntity_TakeHealth (lua_State *L) {
   lua_pushinteger(L, luaL_checkentity(L, 1)->TakeHealth(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3)));
   return 1;
@@ -734,6 +756,7 @@ static const luaL_Reg CBaseEntitymeta[] = {
   {"CanBeHitByMeleeAttack", CBaseEntity_CanBeHitByMeleeAttack},
   {"OnTakeDamage", CBaseEntity_OnTakeDamage},
   {"TakeDamage", CBaseEntity_TakeDamage},
+  {"Dissolve", CBaseEntity_Dissolve},
   {"TakeHealth", CBaseEntity_TakeHealth},
   {"Event_Killed", CBaseEntity_Event_Killed},
   {"Event_KilledOther", CBaseEntity_Event_KilledOther},
