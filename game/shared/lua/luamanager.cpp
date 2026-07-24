@@ -875,6 +875,15 @@ bool luasrc_SetGamemode (const char *gamemode) {
 	  lua_pushstring(L, gamemode);
 	  luasrc_pcall(L, 1, 1, 0);
 	  lua_setglobal(L, "_GAMEMODE");
+
+	  // The gamemode/base content just loaded and replaces the global "util"
+	  // table, which drops the C-side GMod util functions (TraceLine, etc.) that
+	  // were installed during openlibs. Re-inject them now -- after base content,
+	  // before any weapon/entity scripts -- so addon code (e.g. GetEyeTrace ->
+	  // util.TraceLine in the fizzler) still resolves them at runtime.
+	  extern void luasrc_EnsureGModUtil( lua_State *L );
+	  luasrc_EnsureGModUtil( L );
+
 	  Q_snprintf( contentSearchPath, sizeof( contentSearchPath ), "gamemodes/%s/content", gamemode );
 	  filesystem->AddSearchPath( contentSearchPath, "MOD" );
 	  char loadPath[MAX_PATH];
