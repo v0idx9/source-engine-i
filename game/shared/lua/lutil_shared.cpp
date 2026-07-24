@@ -132,6 +132,11 @@ static int luasrc_UTIL_TraceLine (lua_State *L) {
     trace_t tr;
     UTIL_TraceLine( vStart, vEnd, mask, pIgnore, collgroup, &tr );
 
+    // [fizzdbg] TEMP: report when a player's filtered trace (e.g. GetEyeTrace)
+    // hits an NPC, so we can confirm the fizzler's trace actually finds a target.
+    if ( pIgnore && pIgnore->IsPlayer() && tr.m_pEnt && tr.m_pEnt->IsNPC() )
+      Msg( "[fizzdbg] eyetrace hit NPC cls=%s frac=%.3f\n", tr.m_pEnt->GetClassname(), tr.fraction );
+
     lua_pop( L, 2 ); // start, endpos temporaries
     PushGModTraceResult( L, tr, vStart, vEnd );
     return 1;
