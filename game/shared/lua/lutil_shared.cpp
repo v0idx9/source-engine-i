@@ -300,23 +300,53 @@ LUALIB_API int luaopen_UTIL_shared (lua_State *L) {
   return 1;
 }
 
-// Force the shared util functions (TraceLine, EntitiesInSphere,
-// AddNetworkString, ...) onto the global util table. The normal
-// luaL_register path through luaopen_UTIL_shared was not making them
-// reachable at runtime, so set each field directly (this is what addons and
-// the GMod-compat shims rely on, e.g. util.TraceLine's GMod table form).
+// The engine registers all native util functions into the global "UTIL"
+// (uppercase, LUA_UTILLIBNAME), but GMod addons use "util" (lowercase). They
+// were therefore two different tables and addons never saw TraceLine,
+// AddNetworkString, EntitiesInSphere, etc. Mirror the shared util functions
+// onto lowercase "util" (creating it if needed) so addon code and the
+// GMod-compat shims can reach them (e.g. util.TraceLine's GMod table form).
 LUALIB_API void luasrc_EnsureGModUtil (lua_State *L) {
-  lua_getglobal(L, LUA_UTILLIBNAME);
+  // Ensure lowercase "util" exists.
+  lua_getglobal(L, "util");
   if (!lua_istable(L, -1)) {
     lua_pop(L, 1);
     lua_newtable(L);
     lua_pushvalue(L, -1);
-    lua_setglobal(L, LUA_UTILLIBNAME);
+    lua_setglobal(L, "util");
   }
+  int utilIdx = lua_gettop(L);
+
+  // 1) Register this file's shared util functions (TraceLine w/ GMod table
+  //    form, network strings, traces, decals, ...) onto lowercase util.
   for (const luaL_Reg *r = util_funcs; r->name; r++) {
     lua_pushcfunction(L, r->func);
-    lua_setfield(L, -2, r->name);
+    lua_setfield(L, utilIdx, r->name);
   }
-  lua_pop(L, 1);
+
+  // 2) Copy everything the engine put on uppercase "UTIL" (server-side funcs
+  //    like EntitiesInSphere/EntitiesInBox/EntityByIndex/ClientPrint, etc.)
+  //    onto lowercase util too, so the whole native util API is reachable.
+  lua_getglobal(L, LUA_UTILLIBNAME); // "UTIL"
+  if (lua_istable(L, -1)) {
+    int upperIdx = lua_gettop(L);
+    lua_pushnil(L);
+    while (lua_next(L, upperIdx) != 0) {
+      // key at -2, value at -1; set util[key] = value (don't overwrite ours)
+      lua_pushvalue(L, -2); // key
+      lua_gettable(L, utilIdx);
+      bool exists = !lua_isnil(L, -1);
+      lua_pop(L, 1);
+      if (!exists) {
+        lua_pushvalue(L, -2); // key
+        lua_pushvalue(L, -2); // value
+        lua_settable(L, utilIdx);
+      }
+      lua_pop(L, 1); // pop value, keep key
+    }
+  }
+  lua_pop(L, 1); // UTIL
+
+  lua_pop(L, 1); // util
 }
 
