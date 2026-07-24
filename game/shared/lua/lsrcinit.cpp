@@ -305,17 +305,25 @@ do
     if ENT.EntIndex == nil and ENT.entindex ~= nil then function ENT:EntIndex() return self:entindex() end end
     if ENT.TakeDamageInfo == nil and ENT.TakeDamage ~= nil then
       function ENT:TakeDamageInfo( info )
-        if print and self.GetClass then print( "[gmodcompat] TakeDamageInfo on " .. tostring( self:GetClass() ) ) end
-        return self:TakeDamage( info )
+        local dt = ( info and info.GetDamageType ) and info:GetDamageType() or 0
+        self:TakeDamage( info )
+        -- DMG_DISSOLVE (1<<26 = 67108864) means "dissolve the victim". The
+        -- engine's electrical dissolve creates a ragdoll, kills the NPC and
+        -- dissolves it (removing the original), so it works regardless of the
+        -- plain damage path. Do it explicitly here since addons rely on it.
+        -- Bit test done with plain math so it needs no bit library.
+        if effect and effect.Dissolve and math.floor( dt / 67108864 ) % 2 >= 1 then
+          effect.Dissolve( self, "sprites/blueglow1.vmt", CurTime and CurTime() or 0, 1 )
+        end
       end
     end
     if ENT.Dissolve == nil and effect ~= nil and effect.Dissolve ~= nil then
-      -- GMod addons call ent:Dissolve(...); wrap the engine's effect.Dissolve
-      -- (their argument order does not map, so ignore it and use a real
-      -- dissolve sprite so it is actually visible).
+      -- GMod addons call ent:Dissolve(...); wrap the engine's effect.Dissolve.
+      -- Use the electrical type for NPCs (kills + dissolves via a ragdoll) and
+      -- the normal type for everything else. A real sprite so it is visible.
       function ENT:Dissolve()
-        if print and self.GetClass then print( "[gmodcompat] Dissolve on " .. tostring( self:GetClass() ) ) end
-        effect.Dissolve( self, "sprites/blueglow1.vmt", CurTime and CurTime() or 0, 0 )
+        local t = ( self.IsNPC and self:IsNPC() ) and 1 or 0
+        effect.Dissolve( self, "sprites/blueglow1.vmt", CurTime and CurTime() or 0, t )
       end
     end
 
@@ -379,6 +387,18 @@ do
     if WEP.SetNextSecondaryFire == nil then function WEP:SetNextSecondaryFire() end end
     if WEP.ShootEffects == nil then function WEP:ShootEffects() end end
     if WEP.SendWeaponAnim == nil then function WEP:SendWeaponAnim() end end
+  end
+
+  -- physics object methods (GMod names -> engine names). Native already has
+  -- ApplyForceCenter/ApplyForceOffset/ApplyTorqueCenter/GetMass/GetVelocity/
+  -- GetVelocityAtPoint/IsMoveable/LocalToWorld/WorldToLocal/Wake/EnableMotion.
+  local PHYS = reg and reg.IPhysicsObject or nil
+  if PHYS then
+    if PHYS.GetMassCenter == nil and PHYS.GetMassCenterLocalSpace ~= nil then
+      function PHYS:GetMassCenter() return self:GetMassCenterLocalSpace() end
+    end
+    if PHYS.GetPos == nil and PHYS.GetPosition ~= nil then function PHYS:GetPos() return self:GetPosition() end end
+    if PHYS.SetPos == nil and PHYS.SetPosition ~= nil then function PHYS:SetPos( p, a ) return self:SetPosition( p, a ) end end
   end
 
   -- ==== GMod name -> native Source method aliases ====
@@ -530,6 +550,86 @@ player.GetCount = player.GetCount or function() return #player.GetAll() end
 
 -- misc globals used by addons
 if IsFirstTimePredicted == nil then function IsFirstTimePredicted() return true end end
+
+-- ===== GMod stdlib: string / table / math (pure Lua, real implementations) =====
+string.Trim = string.Trim or function( s, char )
+  char = char and ( "%" .. char ) or "%s"
+  return ( string.gsub( s, "^" .. char .. "*(.-)" .. char .. "*$", "%1" ) )
+end
+string.TrimLeft  = string.TrimLeft  or function( s, c ) c = c and ( "%" .. c ) or "%s" return ( string.gsub( s, "^" .. c .. "*", "" ) ) end
+string.TrimRight = string.TrimRight or function( s, c ) c = c and ( "%" .. c ) or "%s" return ( string.gsub( s, c .. "*$", "" ) ) end
+string.Left  = string.Left  or function( s, n ) return string.sub( s, 1, n ) end
+string.Right = string.Right or function( s, n ) return string.sub( s, -n ) end
+string.StartWith  = string.StartWith  or function( s, p ) return string.sub( s, 1, string.len( p ) ) == p end
+string.StartsWith = string.StartsWith or string.StartWith
+string.EndsWith   = string.EndsWith   or function( s, p ) return p == "" or string.sub( s, -string.len( p ) ) == p end
+string.Explode = string.Explode or function( sep, s, usePatterns )
+  local out, idx, plain = {}, 1, not usePatterns
+  local pos = 1
+  while true do
+    local b, e = string.find( s, sep, pos, plain )
+    if not b then out[idx] = string.sub( s, pos ) break end
+    out[idx] = string.sub( s, pos, b - 1 ); idx = idx + 1; pos = e + 1
+  end
+  return out
+end
+string.Split  = string.Split  or function( s, sep ) return string.Explode( sep, s ) end
+string.Implode = string.Implode or function( sep, tbl ) return table.concat( tbl, sep ) end
+string.ToTable = string.ToTable or function( s ) local t = {} for i = 1, string.len( s ) do t[i] = string.sub( s, i, i ) end return t end
+string.PatternSafe = string.PatternSafe or function( s ) return ( string.gsub( s, "([%-%.%+%[%]%(%)%$%^%%%?%*])", "%%%1" ) ) end
+Format = Format or string.format
+
+table.HasValue = table.HasValue or function( t, val ) for _, v in pairs( t ) do if v == val then return true end end return false end
+table.KeyFromValue = table.KeyFromValue or function( t, val ) for k, v in pairs( t ) do if v == val then return k end end end
+table.Add = table.Add or function( dst, src ) local n = #dst for _, v in ipairs( src ) do n = n + 1 dst[n] = v end return dst end
+table.Merge = table.Merge or function( dst, src ) for k, v in pairs( src ) do if type( v ) == "table" and type( dst[k] ) == "table" then table.Merge( dst[k], v ) else dst[k] = v end end return dst end
+table.Copy = table.Copy or function( t, lookup )
+  if t == nil then return nil end
+  local out = {}
+  lookup = lookup or {}
+  lookup[t] = out
+  for k, v in pairs( t ) do
+    if type( v ) == "table" then out[k] = lookup[v] or table.Copy( v, lookup ) else out[k] = v end
+  end
+  return out
+end
+table.GetKeys = table.GetKeys or function( t ) local keys, i = {}, 1 for k in pairs( t ) do keys[i] = k i = i + 1 end return keys end
+table.Random = table.Random or function( t ) local keys = table.GetKeys( t ) local k = keys[ math.random( 1, #keys ) ] return t[k], k end
+table.RemoveByValue = table.RemoveByValue or function( t, val ) local k = table.KeyFromValue( t, val ) if k == nil then return false end if type( k ) == "number" then table.remove( t, k ) else t[k] = nil end return k end
+table.ForceInsert = table.ForceInsert or function( t, v ) if t == nil then t = {} end t[#t + 1] = v return t end
+table.Reverse = table.Reverse or function( t ) local out, n = {}, #t for i = n, 1, -1 do out[n - i + 1] = t[i] end return out end
+table.IsSequential = table.IsSequential or function( t ) local i = 0 for _ in pairs( t ) do i = i + 1 if t[i] == nil then return false end end return true end
+
+math.Distance = math.Distance or function( x1, y1, x2, y2 ) local dx, dy = x2 - x1, y2 - y1 return math.sqrt( dx * dx + dy * dy ) end
+math.Approach = math.Approach or function( cur, target, inc ) inc = math.abs( inc ) if cur < target then return math.min( cur + inc, target ) elseif cur > target then return math.max( cur - inc, target ) end return target end
+math.NormalizeAngle = math.NormalizeAngle or function( a ) a = a % 360 if a > 180 then a = a - 360 end return a end
+math.Remap = math.Remap or function( v, inMin, inMax, outMin, outMax ) return outMin + ( v - inMin ) / ( inMax - inMin ) * ( outMax - outMin ) end
+math.TimeFraction = math.TimeFraction or function( s, e, c ) return ( c - s ) / ( e - s ) end
+math.Truncate = math.Truncate or function( v, d ) local m = 10 ^ ( d or 0 ) return ( v < 0 and math.ceil or math.floor )( v * m ) / m end
+
+-- ===== common global helpers =====
+if tobool == nil then
+  function tobool( v )
+    if v == nil or v == false or v == 0 or v == "0" or v == "false" then return false end
+    return true
+  end
+end
+if IsColor == nil then function IsColor( v ) return type( v ) == "table" and v.r ~= nil and v.g ~= nil and v.b ~= nil end end
+if VectorRand == nil then function VectorRand( mn, mx ) mn = mn or -1 mx = mx or 1 return Vector( math.Rand( mn, mx ), math.Rand( mn, mx ), math.Rand( mn, mx ) ) end end
+if AngleRand == nil then function AngleRand() return Angle( math.Rand( -90, 90 ), math.Rand( -180, 180 ), math.Rand( -180, 180 ) ) end end
+if SortedPairs == nil then
+  function SortedPairs( t, desc )
+    local keys = {}
+    for k in pairs( t ) do keys[#keys + 1] = k end
+    table.sort( keys, function( a, b ) if desc then return a > b else return a < b end end )
+    local i = 0
+    return function() i = i + 1 local k = keys[i] if k ~= nil then return k, t[k] end end
+  end
+end
+if SafeRemoveEntity == nil then function SafeRemoveEntity( e ) if e and IsValid( e ) and e.Remove then e:Remove() end end end
+if SafeRemoveEntityDelayed == nil and timer ~= nil then
+  function SafeRemoveEntityDelayed( e, d ) if timer and timer.Simple then timer.Simple( d or 0, function() SafeRemoveEntity( e ) end ) end end
+end
 if table.IsEmpty == nil then function table.IsEmpty( t ) return next( t ) == nil end end
 if table.Empty == nil then function table.Empty( t ) for k in pairs( t ) do t[k] = nil end end end
 
