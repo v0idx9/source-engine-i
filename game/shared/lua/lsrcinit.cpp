@@ -300,6 +300,18 @@ do
     if ENT.OBBMaxs == nil then function ENT:OBBMaxs() return Vector( 16, 16, 16 ) end end
     if ENT.OBBMins == nil then function ENT:OBBMins() return Vector( -16, -16, -16 ) end end
 
+    -- damage / health / dissolve helpers (GMod names -> engine methods)
+    if ENT.Health == nil and ENT.GetHealth ~= nil then function ENT:Health() return self:GetHealth() end end
+    if ENT.EntIndex == nil and ENT.entindex ~= nil then function ENT:EntIndex() return self:entindex() end end
+    if ENT.TakeDamageInfo == nil and ENT.TakeDamage ~= nil then
+      function ENT:TakeDamageInfo( info ) return self:TakeDamage( info ) end
+    end
+    if ENT.Dissolve == nil and effect ~= nil and effect.Dissolve ~= nil then
+      -- GMod addons call ent:Dissolve(...); wrap the engine's effect.Dissolve
+      -- (their argument order does not map, so ignore it and use sane defaults).
+      function ENT:Dissolve() effect.Dissolve( self, "", 0, 0 ) end
+    end
+
     -- Networked vars: stored per-entity (per realm). This is enough for
     -- server-side addon logic; values are NOT synced across client/server on
     -- this engine, so client-only reads see defaults.
@@ -369,6 +381,27 @@ if MOVETYPE_VPHYSICS == nil then
   MOVETYPE_FLY = 4; MOVETYPE_FLYGRAVITY = 5; MOVETYPE_VPHYSICS = 6; MOVETYPE_PUSH = 7
   MOVETYPE_NOCLIP = 8; MOVETYPE_LADDER = 9; MOVETYPE_OBSERVER = 10; MOVETYPE_CUSTOM = 11
 end
+
+-- DamageInfo (GMod) is the engine's CTakeDamageInfo constructor.
+if DamageInfo == nil and CTakeDamageInfo ~= nil then DamageInfo = CTakeDamageInfo end
+
+-- DMG_* damage-type bits (Source shareddefs). DMG_DISSOLVE makes NPCs
+-- auto-dissolve on death when applied via TakeDamage.
+if DMG_DISSOLVE == nil then
+  DMG_GENERIC = 0; DMG_CRUSH = 1; DMG_BULLET = 2; DMG_SLASH = 4; DMG_BURN = 8
+  DMG_VEHICLE = 16; DMG_FALL = 32; DMG_BLAST = 64; DMG_CLUB = 128; DMG_SHOCK = 256
+  DMG_SONIC = 512; DMG_ENERGYBEAM = 1024; DMG_NEVERGIB = 4096; DMG_ALWAYSGIB = 8192
+  DMG_DROWN = 16384; DMG_PARALYZE = 32768; DMG_NERVEGAS = 65536; DMG_POISON = 131072
+  DMG_RADIATION = 262144; DMG_ACID = 1048576; DMG_SLOWBURN = 2097152
+  DMG_REMOVENORAGDOLL = 4194304; DMG_PHYSGUN = 8388608; DMG_PLASMA = 16777216
+  DMG_AIRBOAT = 33554432; DMG_DISSOLVE = 67108864; DMG_BLAST_SURFACE = 134217728
+  DMG_DIRECT = 268435456; DMG_BUCKSHOT = 536870912
+end
+
+-- ents library (entity creation / lookup)
+if ents == nil then ents = {} end
+if ents.Create == nil and CreateEntityByName ~= nil then ents.Create = function( cls ) return CreateEntityByName( cls ) end end
+ents.FindInSphere = ents.FindInSphere or function() return {} end
 
 -- player library (enumeration)
 if player == nil then player = {} end
