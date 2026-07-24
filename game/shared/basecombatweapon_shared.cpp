@@ -1961,8 +1961,13 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 #endif
 	{
 		// Clip empty? Or out of ammo on a no-clip weapon?
-		if ( !IsMeleeWeapon() &&  
-			(( UsesClipsForAmmo1() && m_iClip1 <= 0) || ( !UsesClipsForAmmo1() && pOwner->GetAmmoCount(m_iPrimaryAmmoType)<=0 )) )
+		// A weapon with no primary ammo type (m_iPrimaryAmmoType == -1, i.e. a
+		// GMod SWEP with Primary.Ammo = "none") does not use ammo at all and can
+		// never be "out of ammo" -- otherwise a no-clip/"none" weapon like the
+		// fizzler would dry-fire (click) forever and PrimaryAttack would never be
+		// called. Only treat a no-clip weapon as empty if it actually uses ammo.
+		if ( !IsMeleeWeapon() &&
+			(( UsesClipsForAmmo1() && m_iClip1 <= 0) || ( !UsesClipsForAmmo1() && m_iPrimaryAmmoType != -1 && pOwner->GetAmmoCount(m_iPrimaryAmmoType)<=0 )) )
 		{
 			HandleFireOnEmpty();
 		}
